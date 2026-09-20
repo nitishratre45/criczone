@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="hosting-provider" content="Netlify">
+<meta name="netlify-deploy" content="https://netlify.new/?utm_campaign=ai-legible&amp;utm_source=meta&amp;utm_medium=referral&amp;utm_id=fd464937-099e-48b5-9109-d8100578210d">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="referrer" content="no-referrer" />
+
+<title>Live TV |Live cricxzone</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+
+<link rel="stylesheet" href="style.css" /> 
+<script src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="glass-nav">
+        <div class="nav-logo" onclick="filterCategory('ALL')">
+            <div class="logo-icon">▶</div>
+            <div class="logo-text">criczone <span>LIVE</span></div>
+        </div>
+        <div class="live-badge-nav">🔴 LIVE TV</div>
+    </nav>
+
+    <!-- MAIN CONTAINER -->
+    <div class="main-container">
+        
+        <div id="loader">Fetching Latest Updated Streams...</div>
+
+        <!-- Dynamic Category Buttons -->
+        <div id="category-container" class="category-container" style="display: none;"></div>
+
+        <!-- Home Matches Grid -->
+        <div id="home-view" class="matches-grid"></div>
+
+        <!-- Detail Match View -->
+        <div id="detail-view" class="detail-view" style="display: none;">
+            <button class="back-btn" onclick="showHome()">← Back to Matches</button>
+            
+            <!-- Share Button (Top Right of Detail View) -->
+            <button id="share-detail-btn" class="share-detail-btn" title="Share this match">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="18" cy="5" r="3"></circle>
+        <circle cx="6" cy="12" r="3"></circle>
+        <circle cx="18" cy="19" r="3"></circle>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+    </svg>
+</button>
+
+            <img id="detail-img" class="detail-img" src="" alt="Poster">
+            <div id="detail-tournament" class="card-category"></div>
+            <h1 id="detail-title" style="margin: 6px 0;"></h1>
+            <p id="detail-time" style="color: var(--muted); font-size: 13px;"></p>
+            <p id="detail-status" style="color: var(--muted); font-size: 13px; margin-top: 4px;"></p>
+
+            <div class="quality-title">Select Playback Quality</div>
+            <div id="quality-grid" class="quality-grid"></div>
+        </div>
+    </div>
+
+    <!-- TELEGRAM MODAL -->
+    <div id="telegram-modal" class="tg-modal">
+        <div class="tg-box">
+            <div class="tg-icon">📢</div>
+            <h3 class="tg-title">Join Telegram</h3>
+            <p class="tg-subtitle">Get live updates and working streams instantly.</p>
+            <a href="#" target="_blank" class="tg-btn">Join Now</a>
+            <button class="tg-secondary-btn" onclick="startSelectedStream()">Continue to Stream</button>
+        </div>
+    </div>
+
+    <!-- PLAYER OVERLAY MODAL -->
+    <div id="player-modal">
+        <button class="close-player-btn" onclick="closePlayer()">✕ Close Player</button>
+        <div class="iframe-container">
+            <iframe id="iframePlayer" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="developer-footer">
+        <div class="dev-name">
+            <div class="dev-stack">
+                <a href="#" target="_blank" class="dev-link">n</a>
+                <a href="#" target="_blank" class="dev-link">r</a>
+            </div>
+        </div>
+        <a href="#" target="_blank" class="telegram-btn">Join Telegram</a>
+        <div class="footer-bottom">© 2026 All Rights Reserved</div>
+    </footer>
+
+<!-- ================= SCRIPT ================= -->
+<script src="script.js"></script>
+
+</body>
+</html>
