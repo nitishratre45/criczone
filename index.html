@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>CRICXCRATE — LIVE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <button class="brand" onclick="showHome()" aria-label="Home">
+      <span class="brand-mark"><span>CR</span></span>
+      <span>CRICXCRATE</span>
+    </button>
+    <div class="top-actions">
+      <button class="top-icon" id="themeBtn" aria-label="Theme">☼</button>
+      <button class="top-icon" id="searchBtn" aria-label="Search">⌕</button>
+    </div>
+  </header>
+
+  <div id="loader" class="loader">Fetching Latest Updated Streams...</div>
+
+  <main>
+    <section id="home-view" class="home-view"></section>
+
+    <section id="detail-view" class="detail-view" style="display:none;">
+      <button class="back-btn" onclick="showHome()">← Back</button>
+      <div class="detail-hero">
+        <img id="detail-img" src="" alt="Match">
+        <div class="detail-overlay"></div>
+        <button id="share-detail-btn" class="detail-share">↗</button>
+        <div class="detail-content">
+          <div id="detail-tournament" class="detail-kicker">Tournament</div>
+          <h1 id="detail-title">Match</h1>
+          <div class="detail-meta"><span id="detail-time">Start Time: TBD</span><span>•</span><span id="detail-status">Status: UPCOMING</span></div>
+          <div class="detail-actions">
+            <button class="watch-btn" onclick="document.querySelector('.quality-grid')?.scrollIntoView({behavior:'smooth',block:'center'})">WATCH ↗</button>
+            <button class="details-btn" onclick="document.querySelector('.language-title')?.scrollIntoView({behavior:'smooth',block:'center'})">MATCH DETAILS</button>
+          </div>
+        </div>
+      </div>
+      <div class="playback-wrap">
+        <div class="section-kicker">03 / PLAYBACK</div>
+        <h2>Choose your stream</h2>
+        <!-- script.js intentionally appends its original language/quality controls here -->
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="showHome()">HOME</button>
+    <button class="nav-item" onclick="document.getElementById('home-view')?.scrollIntoView({behavior:'smooth'})">LIVE</button>
+    <button class="nav-item" id="bottomSearch">SEARCH</button>
+    <button class="nav-item" onclick="document.getElementById('discover-section')?.scrollIntoView({behavior:'smooth'})">SPORTS</button>
+    <button class="nav-item" onclick="document.getElementById('schedule-section')?.scrollIntoView({behavior:'smooth'})">SCHEDULE</button>
+  </nav>
+</div>
+
+<!-- Search -->
+<div id="searchModal" class="search-modal">
+  <div class="search-box">
+    <div class="search-head"><strong>Search</strong><button onclick="closeSearch()">✕</button></div>
+    <input id="searchInput" type="search" placeholder="Search matches…" autocomplete="off">
+    <div id="searchResults"></div>
+  </div>
+</div>
+
+<!-- Existing stream confirmation flow -->
+<div id="telegram-modal" class="telegram-modal">
+  <div class="telegram-box">
+    <div class="modal-kicker">LIVE ACCESS</div>
+    <h3>Continue to stream?</h3>
+    <p>The selected stream will open in the built-in player.</p>
+    <div class="modal-actions">
+      <button class="continue-btn" onclick="startSelectedStream()">CONTINUE</button>
+      <button class="cancel-btn" onclick="document.getElementById('telegram-modal').classList.remove('active')">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- Original external-player iframe flow is intentionally preserved -->
+<div id="player-modal" class="player-modal">
+  <div class="player-header">
+    <div class="player-live"><i></i> LIVE</div>
+    <button onclick="closePlayer()">✕</button>
+  </div>
+  <div class="player-frame-wrap">
+    <iframe id="iframePlayer" src="" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="no-referrer"></iframe>
+  </div>
+</div>
+
+<script src="script.js"></script>
+<script>
+// Premium OTT presentation layer. It does not replace the original stream extraction/player logic.
+(function(){
+  const home = document.getElementById('home-view');
+  const originalRender = window.renderMatches;
+  if (typeof originalRender !== 'function') return;
+
+  window.renderMatches = function(){
+    const today = new Date(); today.setHours(0,0,0,0);
+    const todayTime = today.getTime();
+    const list = matchesData.filter(m => currentCategory === 'ALL' || m.category?.trim().toLowerCase() === currentCategory.toLowerCase()).sort((a,b)=>{
+      const da=getDatePart(a.startTime), db=getDatePart(b.startTime);
+      const ta=da===todayTime,tb=db===todayTime;
+      if(ta&&!tb)return -1;if(!ta&&tb)return 1;if(da!==db)return da-db;
+      return parseCustomDate(a.startTime)-parseCustomDate(b.startTime);
+    });
+    if(!list.length){home.innerHTML='<div class="empty-state">⚡ No matches found.</div>';return;}
+    const hero=list[0];
+    const heroIdx=matchesData.indexOf(hero);
+    const live=list.filter(m=>m.status==='LIVE');
+    const rail=(live.length?live:list).slice(0,10);
+    const cats=[...new Set(matchesData.map(m=>m.category?.trim()).filter(Boolean))].sort();
+    const img=m=>m.image||m.image_cdn?.APP||'';
+    home.innerHTML=`
+      <section class="hero">
+        <img class="hero-img" src="${img(hero)}" alt="${hero.title||''}" onerror="this.style.display='none'">
+        <div class="hero-shade"></div>
+        <button class="hero-share" onclick="openShareModal(${heroIdx});event.stopPropagation();">↗</button>
+        <div class="hero-copy">
+          <div class="section-kicker">${hero.status==='LIVE'?'<span class="live-dot"><i></i> LIVE NOW</span>':'UP NEXT'}</div>
+          <h1>${hero.title||'Live Match'}</h1>
+          <div class="hero-meta"><span>${hero.tournament||hero.category||''}</span><span>•</span><span>${hero.startTime||'TBD'}</span></div>
+          <div class="hero-teams">${hero.title||''}</div>
+          <div class="hero-actions"><button class="watch-btn" onclick="showDetails(${heroIdx})">WATCH ↗</button><button class="details-btn" onclick="showDetails(${heroIdx})">MATCH DETAILS</button></div>
+        </div>
+      </section>
+      <section class="section" id="live-section">
+        <div class="section-head"><div><div class="section-kicker">01 / LIVE SIGNAL</div><h2>${live.length?'Live now':'Up next'}</h2></div><span class="view-all">VIEW ALL →</span></div>
+        <div class="rail">${rail.map(m=>{const i=matchesData.indexOf(m);return `<article class="rail-card" onclick="showDetails(${i})"><div class="rail-img"><img src="${img(m)}" alt="" onerror="this.style.opacity='.2'"><span class="rail-time">${(m.startTime||'TBD').split(' ')[0]||'TBD'}</span></div><div class="rail-cat">${m.tournament||m.category||''}</div><div class="rail-title">${m.title||'Untitled'}</div></article>`}).join('')}</div>
+      </section>
+      <section class="section" id="discover-section">
+        <div class="section-head"><div><div class="section-kicker">02 / DISCOVER</div><h2>Pick your world</h2></div><span class="view-all">EXPLORE →</span></div>
+        <div class="category-list">${cats.map((c,i)=>{const ms=matchesData.filter(m=>(m.category||'').trim().toLowerCase()===c.toLowerCase());return `<article class="category-card" onclick="currentCategory='${c.replace(/'/g,"\\'")}';showHome();setupCategories();renderMatches();"><div><div class="cat-num">${String(i+1).padStart(2,'0')} / CATEGORY</div><div class="cat-name">${c}</div><div class="cat-count">${ms.length} ACTIVE MATCH${ms.length===1?'':'ES'}</div></div><div class="cat-img"><img src="${img(ms[0])}" alt="" onerror="this.style.opacity='.2'"></div></article>`}).join('')}</div>
+      </section>
+      <section class="section" id="schedule-section"><div class="section-head"><div><div class="section-kicker">03 / SCHEDULE</div><h2>Coming up</h2></div></div><div class="rail">${list.slice(0,10).map(m=>{const i=matchesData.indexOf(m);return `<article class="rail-card" onclick="showDetails(${i})"><div class="rail-img"><img src="${img(m)}" alt="" onerror="this.style.opacity='.2'"><span class="rail-time">${(m.startTime||'TBD').split(' ')[0]||'TBD'}</span></div><div class="rail-cat">${m.tournament||m.category||''}</div><div class="rail-title">${m.title||'Untitled'}</div></article>`}).join('')}</div></section>`;
+  };
+
+  // The original fetch calls renderMatches; patch after the function has been replaced.
+  const oldFetch = window.fetchLatestMatches;
+  if (typeof oldFetch==='function') {
+    window.fetchLatestMatches = async function(){
+      const loader=document.getElementById('loader'); if(loader){loader.style.display='block';loader.innerText='Fetching Latest Updated Streams...';}
+      try{const res=await fetch(window.PRIMARY_URL+'?t='+Date.now());const data=await res.json();matchesData=data.matches||[];if(loader)loader.style.display='none';setupCategories();renderMatches();}catch(e){console.error(e);if(loader)loader.innerText='⚠️ Error loading data. Please refresh.';}
+    };
+  }
+
+  window.showHome = function(){
+    document.getElementById('home-view').style.display='block';
+    document.getElementById('detail-view').style.display='none';
+    const u=new URL(location.href);u.searchParams.delete('match');history.pushState({},'',u);
+    renderMatches();window.scrollTo({top:0,behavior:'smooth'});
+  };
+
+  window.closeSearch=function(){document.getElementById('searchModal').classList.remove('active')};
+  function search(){
+    const modal=document.getElementById('searchModal'),input=document.getElementById('searchInput'),results=document.getElementById('searchResults');
+    modal.classList.add('active');input.focus();
+    const render=()=>{const q=input.value.toLowerCase().trim();const a=matchesData.filter(m=>!q||[m.title,m.tournament,m.category,m.status].join(' ').toLowerCase().includes(q)).slice(0,30);results.innerHTML=a.map(m=>{const i=matchesData.indexOf(m);return `<button class="search-result" onclick="closeSearch();showDetails(${i})"><b>${m.title||'Untitled'}</b><small>${m.tournament||m.category||''}</small></button>`}).join('')||'<div class="empty-state">No matches found.</div>';};
+    input.oninput=render;render();
+  }
+  document.getElementById('searchBtn').onclick=search;document.getElementById('bottomSearch').onclick=search;
+  document.getElementById('themeBtn').onclick=()=>document.documentElement.classList.toggle('soft');
+})();
+</script>
+</body>
+</html>
