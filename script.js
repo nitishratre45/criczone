@@ -643,4 +643,4 @@ window.addEventListener('popstate', () => {
 });
 
 setInterval(fetchLatestMatches, 120000);
-console.log('CRICXCRATE OTT loaded');
+console.log('CRICZONE OTT loaded');
