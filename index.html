@@ -1,55 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="theme-color" content="#050509">
-<title>CRICZONE LIVE</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<meta charset="UTF-8" />
+<meta name="hosting-provider" content="Netlify">
+<meta name="netlify-deploy" content="https://netlify.new/?utm_campaign=ai-legible&amp;utm_source=meta&amp;utm_medium=referral&amp;utm_id=fd464937-099e-48b5-9109-d8100578210d">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="referrer" content="no-referrer" />
+
+<title>Live TV | Live cricxzone</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css" />
+
+<!-- Shaka Player: browser-native DASH/HLS playback layer -->
 <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.compiled.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
 </head>
+
 <body>
-<header class="ott-topbar">
-  <button class="mobile-menu" onclick="window.scrollTo({top:0,behavior:'smooth'})">☰</button>
-  <div class="ott-brand" onclick="filterCategory('ALL');showHome()"><span class="brand-mark">▶</span><b>criczone</b><em>LIVE</em></div>
-  <nav class="ott-nav"><button onclick="showHome()">Home</button><button onclick="document.getElementById('home-view').scrollIntoView({behavior:'smooth'})">Sports</button><button onclick="document.getElementById('home-view').scrollIntoView({behavior:'smooth'})">Live TV</button></nav>
-  <div class="ott-top-actions"><button onclick="openSearch()">⌕</button><button onclick="openShareModal(0)">↗</button></div>
-</header>
 
-<main>
-  <div id="loader" class="ott-loader">Loading live sports…</div>
-  <div id="category-container" class="ott-categories" style="display:none"></div>
-  <section id="home-view" class="ott-home"></section>
+<nav class="glass-nav">
+    <div class="nav-logo" onclick="filterCategory('ALL')">
+        <div class="logo-icon">▶</div>
+        <div class="logo-text">criczone <span>LIVE</span></div>
+    </div>
+    <div class="live-badge-nav">🔴 LIVE TV</div>
+</nav>
 
-  <section id="detail-view" class="detail-view" style="display:none">
-    <button class="back-btn" onclick="showHome()">← Back</button>
-    <button id="share-detail-btn" class="share-detail-btn">↗</button>
-    <img id="detail-img" class="detail-img" src="" alt="Poster">
-    <div id="detail-tournament" class="card-category"></div>
-    <h1 id="detail-title"></h1>
-    <p id="detail-time"></p><p id="detail-status"></p>
-    <div id="quality-grid" class="quality-grid"></div>
-  </section>
-</main>
+<div class="main-container">
+
+    <div id="loader">Fetching Latest Updated Streams...</div>
+
+    <div id="category-container" class="category-container" style="display: none;"></div>
+
+    <div id="home-view" class="matches-grid"></div>
+
+    <div id="detail-view" class="detail-view" style="display: none;">
+        <button class="back-btn" onclick="showHome()">← Back to Matches</button>
+
+        <button id="share-detail-btn" class="share-detail-btn" title="Share this match">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+        </button>
+
+        <img id="detail-img" class="detail-img" src="" alt="Poster">
+        <div id="detail-tournament" class="card-category"></div>
+        <h1 id="detail-title" style="margin: 6px 0;"></h1>
+        <p id="detail-time" style="color: var(--muted); font-size: 13px;"></p>
+        <p id="detail-status" style="color: var(--muted); font-size: 13px; margin-top: 4px;"></p>
+
+        <div class="quality-title">Select Playback Quality</div>
+        <div id="quality-grid" class="quality-grid"></div>
+    </div>
+</div>
 
 <div id="telegram-modal" class="tg-modal">
-  <div class="tg-box">
-    <div class="tg-icon">📢</div><h3 class="tg-title">Join Telegram</h3>
-    <p class="tg-subtitle">Get live updates and working streams instantly.</p>
-    <a href="https://t.me/Rohit_TV" target="_blank" rel="noopener" class="tg-btn">Join Now</a>
-    <button class="tg-secondary-btn" onclick="startSelectedStream()">Continue to Stream</button>
-  </div>
+    <div class="tg-box">
+        <div class="tg-icon">📢</div>
+        <h3 class="tg-title">Join Telegram</h3>
+        <p class="tg-subtitle">Get live updates and working streams instantly.</p>
+        <a href="https://t.me/Rohit_TV" target="_blank" rel="noopener noreferrer" class="tg-btn">Join Now</a>
+        <button class="tg-secondary-btn" onclick="startSelectedStream()">Continue to Stream</button>
+    </div>
 </div>
 
-<div id="player-modal" class="shaka-modal">
-  <div class="shaka-header"><b>CRICZONE LIVE</b><button onclick="closePlayer()">✕</button></div>
-  <div class="shaka-stage">
-    <video id="shakaVideo" class="shaka-video" controls autoplay playsinline></video>
-  </div>
+<!-- PLAYER MODAL -->
+<div id="player-modal">
+    <button class="close-player-btn" onclick="closePlayer()">✕ Close Player</button>
+    <div class="iframe-container">
+        <iframe
+            id="iframePlayer"
+            title="Live Player"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowfullscreen
+            playsinline
+            referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+    </div>
 </div>
+
+<footer class="developer-footer">
+    <div class="dev-name">
+        <div class="dev-stack">
+            <a href="#" target="_blank" class="dev-link">n</a>
+            <a href="#" target="_blank" class="dev-link">r</a>
+        </div>
+    </div>
+    <a href="https://t.me/Rohit_TV" target="_blank" rel="noopener noreferrer" class="telegram-btn">Join Telegram</a>
+    <div class="footer-bottom">© 2026 All Rights Reserved</div>
+</footer>
 
 <script src="script.js"></script>
+
 </body>
 </html>
