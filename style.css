@@ -3365,3 +3365,524 @@ img {
         display: inline;
     }
 }
+/* =========================================================
+   PLAYER TOPBAR
+   ========================================================= */
+
+.player-topbar {
+    position: absolute;
+
+    top: 0;
+    left: 0;
+    right: 0;
+
+    z-index: 1000;
+
+    height: 60px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 18px;
+
+    border-bottom:
+        1px solid
+        rgba(255,255,255,.08);
+
+    background:
+        rgba(5,5,7,.92);
+
+    backdrop-filter:
+        blur(18px);
+
+    -webkit-backdrop-filter:
+        blur(18px);
+}
+
+
+/* =========================================================
+   LIVE STATUS
+   ========================================================= */
+
+.player-live-status {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    min-width: 0;
+
+    color:
+        rgba(255,255,255,.72);
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+.player-live-status strong {
+    color: #ff3158;
+
+    font-size: 9px;
+
+    letter-spacing: 1px;
+}
+
+.player-live-dot {
+    width: 7px;
+    height: 7px;
+
+    flex: 0 0 7px;
+
+    border-radius: 50%;
+
+    background: #ff3158;
+
+    box-shadow:
+        0 0 12px
+        rgba(255,49,88,.9);
+
+    animation:
+        globalLivePulse 1.4s infinite;
+}
+
+.player-live-divider {
+    width: 1px;
+    height: 14px;
+
+    flex: 0 0 1px;
+
+    background:
+        rgba(255,255,255,.15);
+}
+
+
+/* =========================================================
+   WATCHING COUNTER
+   ========================================================= */
+
+#live-watching {
+    position: absolute;
+
+    left: 50%;
+
+    top: 50%;
+
+    transform:
+        translate(-50%, -50%);
+
+    z-index: 1005;
+
+    display: none;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    min-height: 34px;
+
+    padding:
+        7px 13px;
+
+    border:
+        1px solid
+        rgba(255,255,255,.12);
+
+    border-radius: 999px;
+
+    background:
+        rgba(8,9,11,.92);
+
+    box-shadow:
+        0 8px 28px
+        rgba(0,0,0,.45);
+
+    backdrop-filter:
+        blur(14px);
+
+    -webkit-backdrop-filter:
+        blur(14px);
+
+    pointer-events: none;
+
+    white-space: nowrap;
+}
+
+#live-watching.active {
+    display: flex;
+}
+
+.watching-dot {
+    width: 7px;
+    height: 7px;
+
+    flex: 0 0 7px;
+
+    border-radius: 50%;
+
+    background:
+        #20e889;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(32,232,137,.10),
+
+        0 0 12px
+        rgba(32,232,137,.75);
+
+    animation:
+        watchingPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes watchingPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+
+        transform:
+            scale(1);
+    }
+
+    50% {
+        opacity: .45;
+
+        transform:
+            scale(.72);
+    }
+}
+
+.watching-text {
+    display: flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    white-space: nowrap;
+}
+
+#watching-count {
+    color:
+        #20e889;
+
+    font-size: 11px;
+
+    line-height: 1;
+
+    font-weight: 900;
+}
+
+.watching-text > span {
+    display: inline !important;
+
+    color:
+        rgba(255,255,255,.75);
+
+    font-size: 9px;
+
+    line-height: 1;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   PLAYER CONTROLS
+   ========================================================= */
+
+.player-controls {
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    margin-left: auto;
+
+    z-index: 1010;
+}
+
+
+/* FULLSCREEN BUTTON */
+
+.expand-player-btn {
+    width: 35px;
+    height: 35px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border:
+        1px solid
+        rgba(255,255,255,.10);
+
+    border-radius: 8px;
+
+    color: #fff;
+
+    background:
+        rgba(255,255,255,.05);
+
+    cursor: pointer;
+
+    transition:
+        .2s ease;
+}
+
+.expand-player-btn:hover {
+    background:
+        rgba(255,255,255,.10);
+
+    border-color:
+        rgba(255,255,255,.20);
+}
+
+.expand-icon {
+    display: block;
+
+    font-size: 19px;
+
+    line-height: 1;
+
+    transform:
+        translateY(-1px);
+}
+
+
+/* CLOSE */
+
+.close-player-btn {
+    min-height: 35px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 6px;
+
+    padding:
+        0 11px;
+
+    border:
+        1px solid
+        rgba(255,255,255,.10);
+
+    border-radius: 8px;
+
+    color:
+        rgba(255,255,255,.78);
+
+    background:
+        rgba(255,255,255,.045);
+
+    font-size: 9px;
+
+    font-weight: 800;
+
+    cursor: pointer;
+
+    transition:
+        .2s ease;
+}
+
+.close-player-btn:hover {
+    color: #fff;
+
+    background:
+        rgba(255,49,88,.12);
+
+    border-color:
+        rgba(255,49,88,.40);
+}
+
+
+/* =========================================================
+   MOBILE PLAYER
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    .player-topbar {
+        height: 52px;
+
+        padding:
+            0 8px;
+    }
+
+    .player-live-status {
+        gap: 5px;
+
+        font-size: 8px;
+    }
+
+    .player-live-status strong {
+        font-size: 8px;
+    }
+
+    .player-live-status > span:last-child {
+        max-width: 85px;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+    }
+
+    .player-live-divider {
+        height: 11px;
+    }
+
+
+    /* WATCHING — ALWAYS VISIBLE ON MOBILE */
+
+    #live-watching {
+        left: 50%;
+
+        top: 50%;
+
+        right: auto;
+        bottom: auto;
+
+        transform:
+            translate(-50%, -50%);
+
+        min-height: 31px;
+
+        padding:
+            6px 9px;
+
+        gap: 6px;
+    }
+
+    .watching-dot {
+        width: 6px;
+        height: 6px;
+
+        flex-basis: 6px;
+    }
+
+    #watching-count {
+        font-size: 10px;
+    }
+
+    .watching-text {
+        gap: 4px;
+    }
+
+    .watching-text > span {
+        display: inline !important;
+
+        font-size: 9px;
+    }
+
+
+    /* CONTROLS */
+
+    .player-controls {
+        gap: 5px;
+    }
+
+    .expand-player-btn {
+        width: 32px;
+        height: 32px;
+
+        padding: 0;
+    }
+
+    .expand-icon {
+        font-size: 17px;
+    }
+
+    .close-player-btn {
+        width: 32px;
+        min-height: 32px;
+
+        padding: 0;
+
+        font-size: 14px;
+    }
+
+    .close-player-btn span {
+        display: none;
+    }
+}
+
+
+/* =========================================================
+   LANDSCAPE PHONE
+   ========================================================= */
+
+@media (max-width: 900px) and (orientation: landscape) {
+
+    .player-topbar {
+        height: 46px;
+
+        padding:
+            0 8px;
+    }
+
+    .player-live-status {
+        font-size: 7px;
+    }
+
+    .player-live-status strong {
+        font-size: 7px;
+    }
+
+    #live-watching {
+        left: 50%;
+
+        top: 50%;
+
+        transform:
+            translate(-50%, -50%);
+
+        min-height: 29px;
+
+        padding:
+            5px 9px;
+    }
+
+    #watching-count {
+        font-size: 10px;
+    }
+
+    .watching-text > span {
+        display: inline !important;
+
+        font-size: 8px;
+    }
+
+    .expand-player-btn {
+        width: 31px;
+        height: 31px;
+    }
+
+    .close-player-btn {
+        width: 31px;
+        min-height: 31px;
+
+        padding: 0;
+    }
+
+    .close-player-btn span {
+        display: none;
+    }
+}
