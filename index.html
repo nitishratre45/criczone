@@ -6,51 +6,97 @@
 <meta name="netlify-deploy" content="https://netlify.new/?utm_campaign=ai-legible&amp;utm_source=meta&amp;utm_medium=referral&amp;utm_id=fd464937-099e-48b5-9109-d8100578210d">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="no-referrer" />
-<meta name="theme-color" content="#070b16" />
+
 <title>Live TV | Live cricxzone</title>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="style.css" />
+
+<!-- Shaka Player: browser-native DASH/HLS playback layer -->
 <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.compiled.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
 </head>
+
 <body>
-<div class="ambient a1"></div><div class="ambient a2"></div><div class="noise"></div>
+
 <nav class="glass-nav">
-  <button class="brand" type="button" onclick="filterCategory('ALL')"><span class="brand-mark">▶</span><span class="brand-copy">criczone <em>LIVE</em></span></button>
-  <div class="nav-links"><button onclick="filterCategory('ALL')">Home</button><a href="#live-matches">Live</a><a href="#categories">Categories</a></div>
-  <div class="live-badge-nav"><i></i> LIVE TV</div>
-</nav>
-<main class="main-container">
-  <section class="hero">
-    <div class="hero-copy">
-      <div class="eyebrow"><i></i> YOUR LIVE SPORTS HUB</div>
-      <h1>Watch the action.<br><span>Stay in the moment.</span></h1>
-      <p>Browse live matches, choose a channel, and open the player in one smooth flow.</p>
-      <div class="hero-actions"><button class="primary-action" onclick="scrollToMatches()">Explore Live <b>→</b></button><button class="secondary-action" onclick="filterCategory('ALL')">All Channels</button></div>
+    <div class="nav-logo" onclick="filterCategory('ALL')">
+        <div class="logo-icon">▶</div>
+        <div class="logo-text">criczone <span>LIVE</span></div>
     </div>
-    <div class="hero-art"><div class="orbit o1"></div><div class="orbit o2"></div><div class="hero-glow"></div><div class="hero-play">▶</div><span class="chip c1">● LIVE NOW</span><span class="chip c2">HD STREAM</span><span class="chip c3">⚡ FAST PLAYER</span></div>
-  </section>
-  <section class="quick-stats">
-    <div class="stat"><b>◉</b><span><strong>LIVE</strong><small>Real-time channels</small></span></div>
-    <div class="stat"><b>✦</b><span><strong>HD</strong><small>Quality options</small></span></div>
-    <div class="stat"><b>↗</b><span><strong>SHARE</strong><small>Send match links</small></span></div>
-    <div class="stat"><b>⌁</b><span><strong>MOBILE</strong><small>Responsive design</small></span></div>
-  </section>
-  <section id="categories" class="section"><div class="section-head"><div><small>BROWSE</small><h2>Categories</h2></div><span>Choose your sport & channel</span></div><div id="category-container" class="category-container" style="display:none"></div></section>
-  <section id="live-matches" class="section matches-section">
-    <div class="section-head"><div><small>STREAMING NOW</small><h2>Live Matches</h2><p>Freshly updated streams, sorted around the current schedule.</p></div><button class="refresh-btn" onclick="fetchLatestMatches()">↻ Refresh</button></div>
-    <div class="toolbar"><label class="search-box"><b>⌕</b><input id="match-search" type="search" placeholder="Search matches, teams or tournaments..." autocomplete="off"></label><span class="auto"><i></i> Auto updated</span></div>
-    <div id="loader" class="loader"><span class="loader-ring"></span>Fetching Latest Updated Streams...</div>
+    <div class="live-badge-nav">🔴 LIVE TV</div>
+</nav>
+
+<div class="main-container">
+
+    <div id="loader">Fetching Latest Updated Streams...</div>
+
+    <div id="category-container" class="category-container" style="display: none;"></div>
+
     <div id="home-view" class="matches-grid"></div>
-  </section>
-  <section id="detail-view" class="detail-view" style="display:none">
-    <div class="detail-top"><button class="back-btn" onclick="showHome()">← Back to Matches</button><button id="share-detail-btn" class="share-detail-btn" title="Share this match">↗</button></div>
-    <div class="detail-layout"><div class="detail-poster"><img id="detail-img" class="detail-img" src="" alt="Poster"></div><div class="detail-info"><div id="detail-tournament" class="card-category"></div><h1 id="detail-title"></h1><p id="detail-time"></p><p id="detail-status"></p><div class="quality-title">Select Playback Quality</div><div id="quality-grid" class="quality-grid"></div></div></div>
-  </section>
-</main>
-<div id="telegram-modal" class="tg-modal"><div class="tg-box"><button class="modal-x" onclick="closeTelegramModal()">×</button><div class="tg-icon">✈</div><small>ONE MORE STEP</small><h3>Join Telegram</h3><p>Get live updates and working streams instantly.</p><a href="https://t.me/Rohit_TV" target="_blank" rel="noopener noreferrer" class="tg-btn">Join Now</a><button class="tg-secondary-btn" onclick="startSelectedStream()">Continue to Stream</button></div></div>
-<div id="player-modal"><button class="close-player-btn" onclick="closePlayer()">✕ Close Player</button><div class="iframe-container"><iframe id="iframePlayer" title="Live Player" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen playsinline referrerpolicy="no-referrer-when-downgrade"></iframe></div></div>
-<footer class="footer"><strong>criczone <span>LIVE</span></strong><p>Live sports. Clean interface. Smooth experience.</p><a href="https://t.me/Rohit_TV" target="_blank" rel="noopener noreferrer" class="telegram-btn">Join Telegram</a><div>© 2026 All Rights Reserved</div></footer>
+
+    <div id="detail-view" class="detail-view" style="display: none;">
+        <button class="back-btn" onclick="showHome()">← Back to Matches</button>
+
+        <button id="share-detail-btn" class="share-detail-btn" title="Share this match">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+        </button>
+
+        <img id="detail-img" class="detail-img" src="" alt="Poster">
+        <div id="detail-tournament" class="card-category"></div>
+        <h1 id="detail-title" style="margin: 6px 0;"></h1>
+        <p id="detail-time" style="color: var(--muted); font-size: 13px;"></p>
+        <p id="detail-status" style="color: var(--muted); font-size: 13px; margin-top: 4px;"></p>
+
+        <div class="quality-title">Select Playback Quality</div>
+        <div id="quality-grid" class="quality-grid"></div>
+    </div>
+</div>
+
+<div id="telegram-modal" class="tg-modal">
+    <div class="tg-box">
+        <div class="tg-icon">📢</div>
+        <h3 class="tg-title">Join Telegram</h3>
+        <p class="tg-subtitle">Get live updates and working streams instantly.</p>
+        <a href="https://t.me/Rohit_TV" target="_blank" rel="noopener noreferrer" class="tg-btn">Join Now</a>
+        <button class="tg-secondary-btn" onclick="startSelectedStream()">Continue to Stream</button>
+    </div>
+</div>
+
+<!-- PLAYER MODAL -->
+<div id="player-modal">
+    <button class="close-player-btn" onclick="closePlayer()">✕ Close Player</button>
+    <div class="iframe-container">
+        <iframe
+            id="iframePlayer"
+            title="Live Player"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowfullscreen
+            playsinline
+            referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+    </div>
+</div>
+
+<footer class="developer-footer">
+    <div class="dev-name">
+        <div class="dev-stack">
+            <a href="#" target="_blank" class="dev-link">n</a>
+            <a href="#" target="_blank" class="dev-link">r</a>
+        </div>
+    </div>
+    <a href="https://t.me/Rohit_TV" target="_blank" rel="noopener noreferrer" class="telegram-btn">Join Telegram</a>
+    <div class="footer-bottom">© 2026 All Rights Reserved</div>
+</footer>
+
 <script src="script.js"></script>
-</body></html>
+
+</body>
+</html>
