@@ -2,429 +2,1029 @@ let matchesData = [];
 let currentCategory = 'ALL';
 let pendingStreamData = null;
 
-window.PRIMARY_URL = "https://raw.githubusercontent.com/kajju027/Fancode-Events-Json/main/fancode.json";
+window.PRIMARY_URL =
+    "https://raw.githubusercontent.com/kajju027/Fancode-Events-Json/main/fancode.json";
 
-// ========== DATE PARSER ==========
-function parseCustomDate(s) {
-    if (!s) return 0;
-    const m = s.trim().match(/^(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)\s*(\d{2})-(\d{2})-(\d{4})$/i);
-    if (!m) return Date.parse(s) || 0;
-    let h = +m[1];
-    const ampm = m[4].toUpperCase();
-    if (ampm === 'PM' && h !== 12) h += 12;
-    if (ampm === 'AM' && h === 12) h = 0;
-    return new Date(+m[7], +m[6] - 1, +m[5], h, +m[2], +m[3]).getTime();
-}
+const $ = (id) => document.getElementById(id);
 
-function getDatePart(s) {
-    const t = parseCustomDate(s);
-    if (!t) return 0;
-    const d = new Date(t);
-    d.setHours(0, 0, 0, 0);
-    return d.getTime();
-}
+const escapeHTML = (value) => {
+    const div = document.createElement('div');
+    div.textContent = value ?? '';
+    return div.innerHTML;
+};
 
-// ========== FETCH ==========
+/* =========================
+   FETCH LIVE MATCH DATA
+========================= */
+
 async function fetchLatestMatches() {
-    const loader = document.getElementById('loader');
-    if (loader) { loader.style.display = 'block'; loader.innerText = 'Fetching Latest Updated Streams...'; }
+    const loader = $('loader');
 
     try {
-        const res = await fetch(window.PRIMARY_URL + '?t=' + Date.now());
-        const data = await res.json();
-        matchesData = data.matches || [];
-        console.log(`✅ Loaded ${matchesData.length} matches`);
-        if (loader) loader.style.display = 'none';
+        if (loader) loader.style.display = 'flex';
+
+        const response = await fetch(
+            window.PRIMARY_URL + '?t=' + Date.now(),
+            {
+                cache: 'no-store'
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        matchesData = Array.isArray(data.matches)
+            ? data.matches
+            : [];
+
         setupCategories();
         renderMatches();
-    } catch (e) {
-        console.error('❌ Fetch error:', e);
-        if (loader) loader.innerText = '⚠️ Error loading data. Please refresh.';
+        updateStats();
+
+    } catch (error) {
+        console.error('Failed to load matches:', error);
+
+        const container = $('matches-container');
+
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">⚠️</div>
+                    <h3>Unable to load matches</h3>
+                    <p>Please try refreshing the page.</p>
+                    <button class="primary-btn" onclick="fetchLatestMatches()">
+                        Try Again
+                    </button>
+                </div>
+            `;
+        }
+
+    } finally {
+        if (loader) loader.style.display = 'none';
     }
 }
 
-// ========== CATEGORIES ==========
+
+/* =========================
+   CATEGORIES
+========================= */
+
 function setupCategories() {
-    const cats = [...new Set(matchesData.map(m => m.category?.trim()).filter(Boolean))].sort();
-    const container = document.getElementById('category-container');
+    const container = $('categories');
+
     if (!container) return;
-    container.innerHTML = '';
-    container.style.display = 'flex';
-    ['ALL', ...cats].forEach(c => {
-        const b = document.createElement('button');
-        b.className = `cat-btn ${c === currentCategory ? 'active' : ''}`;
-        b.innerText = c;
-        b.onclick = () => { currentCategory = c; showHome(); setupCategories(); renderMatches(); };
-        container.appendChild(b);
-    });
+
+    const categories = [
+        'ALL',
+        ...new Set(
+            matchesData
+                .map(match => match.category)
+                .filter(Boolean)
+        )
+    ];
+
+    container.innerHTML = categories.map(category => `
+        <button
+            class="category-btn ${currentCategory === category ? 'active' : ''}"
+            onclick="filterCategory('${escapeHTML(category)}')"
+        >
+            ${escapeHTML(category)}
+        </button>
+    `).join('');
 }
 
-// ========== RENDER MATCHES ==========
-function renderMatches() {
-    const homeView = document.getElementById('home-view');
-    if (!homeView) return;
-    homeView.innerHTML = '';
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayTime = today.getTime();
+/* =========================
+   FILTER CATEGORY
+========================= */
 
-    const filtered = matchesData
-        .filter(m => currentCategory === 'ALL' || m.category?.trim().toLowerCase() === currentCategory.toLowerCase())
-        .sort((a, b) => {
-            const dA = getDatePart(a.startTime), dB = getDatePart(b.startTime);
-            const isTodayA = dA === todayTime, isTodayB = dB === todayTime;
-            if (isTodayA && !isTodayB) return -1;
-            if (!isTodayA && isTodayB) return 1;
-            if (dA !== dB) return dA - dB;
-            return parseCustomDate(a.startTime) - parseCustomDate(b.startTime);
+function filterCategory(category) {
+    currentCategory = category || 'ALL';
+
+    setupCategories();
+    renderMatches();
+
+    const section = $('live-matches');
+
+    if (section) {
+        section.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
         });
+    }
+}
 
-    if (!filtered.length) {
-        homeView.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#64748b;padding:4rem 1rem;">⚡ No matches found.</div>`;
+
+/* =========================
+   RENDER MATCHES
+========================= */
+
+function renderMatches() {
+    const container = $('matches-container');
+
+    if (!container) return;
+
+    let filteredMatches = matchesData;
+
+    if (currentCategory !== 'ALL') {
+        filteredMatches = matchesData.filter(
+            match => match.category === currentCategory
+        );
+    }
+
+    if (!filteredMatches.length) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">🏏</div>
+                <h3>No live matches found</h3>
+                <p>There are no matches in this category right now.</p>
+            </div>
+        `;
         return;
     }
 
-    filtered.forEach(match => {
-        const idx = matchesData.indexOf(match);
-        const isLive = match.status === 'LIVE';
-        const imgUrl = match.image || match.image_cdn?.APP || '';
-        const isToday = getDatePart(match.startTime) === todayTime;
+    container.innerHTML = filteredMatches.map((match, index) => {
 
-        const card = document.createElement('div');
-        card.className = 'match-card';
-        card.onclick = () => showDetails(idx);
-        card.innerHTML = `
-            <div class="card-thumb-wrap">
-                <span class="status-badge ${isLive ? 'badge-live' : 'badge-upcoming'}">${match.status || 'UPCOMING'}</span>
-                ${isToday ? '<span class="today-badge-card">TODAY</span>' : ''}
-                <img class="card-img" src="${imgUrl}" alt="${match.title}" onerror="this.src='https://via.placeholder.com/300x160/1e293b/64748b?text=No+Image'">
-                <button class="share-btn-3dot" onclick="openShareModal(${idx});event.stopPropagation();" title="Share">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                    </svg>
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="card-category">${match.category || 'Uncategorized'}</div>
-                <div class="card-title">${match.title || 'Untitled'}</div>
-                <div class="card-tournament">${match.tournament || ''}</div>
-                <div class="card-time">🕒 ${match.startTime || 'TBD'}</div>
-            </div>`;
-        homeView.appendChild(card);
+        const actualIndex = matchesData.indexOf(match);
+
+        const title =
+            match.title ||
+            match.name ||
+            'Live Match';
+
+        const teamA =
+            match.team_a ||
+            match.team1 ||
+            match.teams?.[0] ||
+            'Team A';
+
+        const teamB =
+            match.team_b ||
+            match.team2 ||
+            match.teams?.[1] ||
+            'Team B';
+
+        const image =
+            match.image ||
+            match.thumbnail ||
+            match.logo ||
+            '';
+
+        const category =
+            match.category ||
+            'LIVE';
+
+        return `
+            <article
+                class="match-card"
+                data-title="${escapeHTML(title)}"
+                onclick="showDetails(${actualIndex})"
+            >
+
+                <div class="match-image">
+
+                    ${
+                        image
+                        ? `<img
+                            src="${escapeHTML(image)}"
+                            alt="${escapeHTML(title)}"
+                            loading="lazy"
+                           >`
+                        : `
+                            <div class="match-placeholder">
+                                🏏
+                            </div>
+                          `
+                    }
+
+                    <span class="live-badge">
+                        LIVE
+                    </span>
+
+                    <span class="category-badge">
+                        ${escapeHTML(category)}
+                    </span>
+
+                    <div class="card-play">
+                        ▶
+                    </div>
+
+                </div>
+
+                <div class="match-content">
+
+                    <h3>
+                        ${escapeHTML(title)}
+                    </h3>
+
+                    <div class="teams-row">
+                        <span>
+                            ${escapeHTML(teamA)}
+                        </span>
+
+                        <span class="vs">
+                            VS
+                        </span>
+
+                        <span>
+                            ${escapeHTML(teamB)}
+                        </span>
+                    </div>
+
+                    <div class="match-footer">
+                        <span>📺 Live</span>
+                        <span>▶ Watch</span>
+                    </div>
+
+                </div>
+
+            </article>
+        `;
+    }).join('');
+}
+
+
+/* =========================
+   SEARCH
+========================= */
+
+const matchSearch = $('match-search');
+
+if (matchSearch) {
+
+    matchSearch.addEventListener('input', () => {
+
+        const query =
+            matchSearch.value
+                .trim()
+                .toLowerCase();
+
+        document
+            .querySelectorAll('.match-card')
+            .forEach(card => {
+
+                const text =
+                    card.innerText.toLowerCase();
+
+                card.style.display =
+                    text.includes(query)
+                        ? ''
+                        : 'none';
+            });
     });
 }
 
-// ========== SHARE MODAL ==========
-function openShareModal(idx) {
-    const match = matchesData[idx];
+
+/* =========================
+   DETAILS PAGE
+========================= */
+
+function showDetails(index) {
+
+    const match = matchesData[index];
+
     if (!match) return;
 
-    const shareUrl = window.location.href.split('?')[0] + '?match=' + idx;
-    const title = match.title || 'Live Match';
-    const img = match.image || match.image_cdn?.APP || '';
-    const tournament = match.tournament || '';
+    const homeView = $('home-view');
+    const detailView = $('detail-view');
 
-    document.getElementById('custom-share-modal')?.remove();
+    if (!homeView || !detailView) return;
 
-    const modal = document.createElement('div');
-    modal.id = 'custom-share-modal';
-    modal.className = 'custom-share-modal';
-    modal.innerHTML = `
-        <div class="share-box">
-            <div class="share-drag-handle"></div>
-            <button class="share-close" onclick="closeShareModal()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-            </button>
-            <div class="share-header">
-                <div class="share-match-preview">
-                    <img src="${img}" alt="${title}" onerror="this.src='https://via.placeholder.com/80x80/1e293b/64748b?text=Live'">
-                    <div class="share-match-glow"></div>
-                </div>
-                <h3 class="share-title">Share This Match</h3>
-                <p class="share-match-name">${title}</p>
-                ${tournament ? `<p class="share-match-tournament">${tournament}</p>` : ''}
-            </div>
-            <div class="share-link-section">
-                <div class="share-link-box">
-                    <svg class="link-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                    </svg>
-                    <input type="text" id="share-url-input" value="${shareUrl}" readonly>
-                    <button class="copy-btn" onclick="copyShareUrl()">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                        </svg>
-                        <span>Copy</span>
-                    </button>
-                </div>
-            </div>
-            <div class="share-divider"><span>Share via</span></div>
-            <div class="share-options">
-                <a href="https://wa.me/?text=${encodeURIComponent(title + '\n' + shareUrl)}" target="_blank" class="share-option whatsapp">
-                    <div class="share-option-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884"/></svg></div>
-                    <span>WhatsApp</span>
-                </a>
-                <a href="https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title)}" target="_blank" class="share-option telegram">
-                    <div class="share-option-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg></div>
-                    <span>Telegram</span>
-                </a>
-                <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title)}" target="_blank" class="share-option twitter">
-                    <div class="share-option-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></div>
-                    <span>Twitter</span>
-                </a>
-                <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}" target="_blank" class="share-option facebook">
-                    <div class="share-option-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></div>
-                    <span>Facebook</span>
-                </a>
-            </div>
-            <button class="share-native-btn" onclick="nativeShare('${shareUrl}','${title.replace(/'/g, "\\'")}')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                </svg>
-                <span>More Sharing Options</span>
-            </button>
-        </div>`;
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('active'), 10);
-    modal.addEventListener('click', e => { if (e.target === modal) closeShareModal(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeShareModal(); }, { once: true });
+    homeView.style.display = 'none';
+    detailView.style.display = 'block';
+
+    const title =
+        match.title ||
+        match.name ||
+        'Live Match';
+
+    const image =
+        match.image ||
+        match.thumbnail ||
+        match.logo ||
+        '';
+
+    const detailTitle = $('detail-title');
+    const detailImage = $('detail-image');
+    const detailCategory = $('detail-category');
+
+    if (detailTitle) {
+        detailTitle.textContent = title;
+    }
+
+    if (detailImage && image) {
+        detailImage.src = image;
+    }
+
+    if (detailCategory) {
+        detailCategory.textContent =
+            match.category || 'LIVE';
+    }
+
+    renderQualities(match);
+
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+
+    history.pushState(
+        {},
+        '',
+        '?match=' + index
+    );
 }
 
-function closeShareModal() {
-    const modal = document.getElementById('custom-share-modal');
-    if (!modal) return;
-    modal.classList.remove('active');
-    setTimeout(() => modal.remove(), 250);
+
+/* =========================
+   HOME
+========================= */
+
+function showHome() {
+
+    const homeView = $('home-view');
+    const detailView = $('detail-view');
+
+    if (detailView) {
+        detailView.style.display = 'none';
+    }
+
+    if (homeView) {
+        homeView.style.display = 'block';
+    }
+
+    history.pushState(
+        {},
+        '',
+        location.pathname
+    );
+
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
 }
 
-function copyShareUrl() {
-    const input = document.getElementById('share-url-input');
-    if (!input) return;
-    navigator.clipboard.writeText(input.value).then(() => {
-        const btn = document.querySelector('.copy-btn span');
-        if (btn) { btn.innerText = '✓ Copied'; setTimeout(() => btn.innerText = 'Copy', 2000); }
-    }).catch(() => { input.select(); document.execCommand('copy'); alert('✅ Link copied!'); });
-}
 
-function nativeShare(url, title) {
-    navigator.share
-        ? navigator.share({ title, text: 'Check out this live match!', url }).catch(() => {})
-        : copyShareUrl();
-}
+/* =========================
+   QUALITY / STREAMS
+========================= */
 
-// ========== EXTRACT STREAMS (LANGUAGE-WISE) ==========
-function extractStreams(match) {
-    const languages = {};
-    let drmKey = match.STREAMING_CDN?.drm?.clearkey || match.drm?.clearkey || "";
+function getStreams(match) {
 
-    if (match.auto_streams && !Array.isArray(match.auto_streams)) {
-        Object.keys(match.auto_streams).forEach(lang => {
-            const streams = match.auto_streams[lang]?.streams;
-            if (streams && Object.keys(streams).some(k => /^\d+p$/.test(k))) {
-                languages[lang.toUpperCase()] = streams;
+    const streams = [];
+
+    if (
+        match?.STREAMING_CDN?.drm?.clearkey
+    ) {
+        streams.push({
+            name: 'HD',
+            url: match.STREAMING_CDN.drm.clearkey.url,
+            key: match.STREAMING_CDN.drm.clearkey.key
+        });
+    }
+
+    if (
+        match?.drm?.clearkey
+    ) {
+        streams.push({
+            name: 'HD',
+            url: match.drm.clearkey.url,
+            key: match.drm.clearkey.key
+        });
+    }
+
+    if (Array.isArray(match?.auto_streams)) {
+
+        match.auto_streams.forEach((stream, index) => {
+
+            if (!stream) return;
+
+            if (typeof stream === 'string') {
+
+                streams.push({
+                    name: `Stream ${index + 1}`,
+                    url: stream,
+                    key: ''
+                });
+
+            } else {
+
+                streams.push({
+                    name:
+                        stream.name ||
+                        stream.quality ||
+                        `Stream ${index + 1}`,
+
+                    url:
+                        stream.url ||
+                        stream.stream ||
+                        stream.src ||
+                        '',
+
+                    key:
+                        stream.key ||
+                        ''
+                });
             }
         });
     }
 
-    if (Array.isArray(match.auto_streams) && match.auto_streams[0]?.auto) {
-        const parsed = parseM3u8Qualities(match.auto_streams[0].auto);
-        if (Object.keys(parsed).length) languages['DEFAULT'] = parsed;
+    if (Array.isArray(match?.streams)) {
+
+        match.streams.forEach((stream, index) => {
+
+            if (!stream) return;
+
+            if (typeof stream === 'string') {
+
+                streams.push({
+                    name: `Stream ${index + 1}`,
+                    url: stream,
+                    key: ''
+                });
+
+            } else {
+
+                streams.push({
+                    name:
+                        stream.name ||
+                        stream.quality ||
+                        `Stream ${index + 1}`,
+
+                    url:
+                        stream.url ||
+                        stream.stream ||
+                        stream.src ||
+                        '',
+
+                    key:
+                        stream.key ||
+                        ''
+                });
+            }
+        });
     }
 
-    if (!Object.keys(languages).length && match.streams?.primary) {
-        languages['DEFAULT'] = { '1080p': match.streams.primary };
+    if (
+        match?.streams?.primary
+    ) {
+
+        const primary =
+            match.streams.primary;
+
+        if (typeof primary === 'string') {
+
+            streams.push({
+                name: 'Primary',
+                url: primary,
+                key: ''
+            });
+
+        } else {
+
+            streams.push({
+                name:
+                    primary.name ||
+                    'Primary',
+
+                url:
+                    primary.url ||
+                    primary.stream ||
+                    primary.src ||
+                    '',
+
+                key:
+                    primary.key ||
+                    ''
+            });
+        }
     }
 
-    console.log('🌐 Languages:', Object.keys(languages));
-    return { languages, drmKey };
+    return streams.filter(
+        stream => stream.url
+    );
 }
 
-function parseM3u8Qualities(str) {
-    if (!str || typeof str !== 'string') return {};
-    const map = {};
-    const lines = str.split('\n');
-    lines.forEach((line, i) => {
-        const m = line.match(/RESOLUTION=\d+x(\d+)/);
-        if (m && lines[i + 1]?.startsWith('http')) map[m[1] + 'p'] = lines[i + 1].trim();
-    });
-    return map;
-}
 
-// ========== SHOW DETAILS ==========
-function showDetails(index) {
-    const match = matchesData[index];
-    if (!match) return;
+/* =========================
+   RENDER QUALITY BUTTONS
+========================= */
 
-    const url = new URL(window.location);
-    url.searchParams.set('match', index);
-    window.history.pushState({}, '', url);
+function renderQualities(match) {
 
-    document.getElementById('home-view').style.display = 'none';
-    document.getElementById('detail-view').style.display = 'block';
+    const container =
+        $('quality-buttons');
 
-    const $ = id => document.getElementById(id);
-    if ($('detail-img')) $('detail-img').src = match.image || match.image_cdn?.APP || '';
-    if ($('detail-tournament')) $('detail-tournament').innerText = match.tournament || 'Tournament';
-    if ($('detail-title')) $('detail-title').innerText = match.title || 'Match';
-    if ($('detail-time')) $('detail-time').innerText = `Start Time: ${match.startTime || 'TBD'}`;
-    if ($('detail-status')) $('detail-status').innerText = `Status: ${match.status || 'UPCOMING'}`;
-    if ($('share-detail-btn')) $('share-detail-btn').onclick = () => openShareModal(index);
+    if (!container) return;
 
-    // 🔥 Remove old dynamic sections
-    document.querySelectorAll('.language-title, .language-tabs, .quality-section, .quality-title, #quality-grid').forEach(el => el.remove());
+    const streams =
+        getStreams(match);
 
-    const detailView = document.getElementById('detail-view');
-    const { languages, drmKey } = extractStreams(match);
-    const langKeys = Object.keys(languages);
+    if (!streams.length) {
 
-    if (!langKeys.length) {
-        const p = document.createElement('p');
-        p.style.cssText = 'color:#64748b;text-align:center;padding:20px;';
-        p.innerText = '🚫 Stream unavailable';
-        detailView.appendChild(p);
+        container.innerHTML = `
+            <div class="empty-stream">
+                Stream URL not available.
+            </div>
+        `;
+
         return;
     }
 
-    // Sort: HINDI priority
-    const priority = ['HINDI', 'ENGLISH', 'PUNJABI', 'TAMIL', 'TELUGU', 'BHOJPURI', 'MALAYALAM', 'KANNADA', 'BENGALI', 'MARATHI'];
-    langKeys.sort((a, b) => {
-        const ai = priority.indexOf(a), bi = priority.indexOf(b);
-        if (ai !== -1 && bi !== -1) return ai - bi;
-        if (ai !== -1) return -1;
-        if (bi !== -1) return 1;
-        return a.localeCompare(b);
-    });
-
-    // Language title
-    const langTitle = document.createElement('div');
-    langTitle.className = 'language-title';
-    langTitle.innerText = '🌐 Select Language';
-    detailView.appendChild(langTitle);
-
-    // Language tabs
-    const langTabs = document.createElement('div');
-    langTabs.className = 'language-tabs';
-    detailView.appendChild(langTabs);
-
-    // Quality section
-    const qSection = document.createElement('div');
-    qSection.className = 'quality-section';
-    qSection.innerHTML = `
-        <div class="quality-title">🎬 Select Quality</div>
-        <div class="quality-grid" id="quality-grid"></div>`;
-    detailView.appendChild(qSection);
-
-    const qGrid = qSection.querySelector('#quality-grid');
-    let activeLang = langKeys[0];
-
-    langKeys.forEach(lang => {
-        const btn = document.createElement('button');
-        btn.className = `lang-btn ${lang === activeLang ? 'active' : ''}`;
-        btn.innerText = lang;
-        btn.onclick = () => {
-            langTabs.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            activeLang = lang;
-            renderQualities(languages[lang], drmKey, qGrid);
-        };
-        langTabs.appendChild(btn);
-    });
-
-    renderQualities(languages[activeLang], drmKey, qGrid);
+    container.innerHTML =
+        streams.map(stream => `
+            <button
+                class="quality-btn"
+                onclick="triggerStreamFlow(
+                    '${encodeURIComponent(stream.url)}',
+                    '${encodeURIComponent(stream.key || '')}'
+                )"
+            >
+                ▶ ${escapeHTML(stream.name)}
+            </button>
+        `).join('');
 }
 
-function renderQualities(streams, drmKey, grid) {
-    grid.innerHTML = '';
-    const q = Object.keys(streams).filter(k => /^\d+p$/.test(k));
-    if (!q.length) {
-        grid.innerHTML = '<p style="color:#64748b;text-align:center;padding:20px;">🚫 No streams</p>';
+
+/* =========================
+   STREAM FLOW
+========================= */
+
+function triggerStreamFlow(
+    url,
+    key = ''
+) {
+
+    if (!url) {
+        alert('Stream URL not available.');
         return;
     }
-    q.sort((a, b) => parseInt(b) - parseInt(a)).forEach(quality => {
-        const btn = document.createElement('button');
-        btn.className = 'quality-btn';
-        btn.innerText = `▶ PLAY ${quality.toUpperCase()}`;
-        btn.onclick = () => triggerStreamFlow(streams[quality], drmKey);
-        grid.appendChild(btn);
-    });
-}
 
-// ========== NAVIGATION ==========
-function showHome() {
-    document.getElementById('home-view').style.display = 'grid';
-    document.getElementById('detail-view').style.display = 'none';
-    const url = new URL(window.location);
-    url.searchParams.delete('match');
-    window.history.pushState({}, '', url);
-}
+    try {
+        url = decodeURIComponent(url);
+        key = decodeURIComponent(key);
+    } catch (error) {
+        console.warn(
+            'URL decode failed:',
+            error
+        );
+    }
 
-// ========== STREAM FLOW ==========
-function triggerStreamFlow(url, key = "") {
-    if (!url) return alert('Stream URL not available.');
-    pendingStreamData = { url, key };
-    const modal = document.getElementById('telegram-modal');
+    pendingStreamData = {
+        url,
+        key
+    };
+
+    const modal =
+        $('telegram-modal');
+
     if (!modal) return;
+
     modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
+
+    document.body.style.overflow =
+        'hidden';
 }
+
+
+/* =========================
+   CLOSE TELEGRAM MODAL
+========================= */
 
 function closeTelegramModal() {
-    const modal = document.getElementById('telegram-modal');
-    if (modal) modal.classList.remove('active');
-    document.body.style.overflow = 'auto';
+
+    const modal =
+        $('telegram-modal');
+
+    if (modal) {
+        modal.classList.remove('active');
+    }
+
+    document.body.style.overflow =
+        '';
 }
 
+
+/* =========================
+   START STREAM
+========================= */
+
 function startSelectedStream() {
-    if (!pendingStreamData?.url) return alert('No stream selected.');
 
-    const streamData = { ...pendingStreamData };
-    closeTelegramModal();
+    if (!pendingStreamData?.url) {
 
-    const iframe = document.getElementById('iframePlayer');
-    const pm = document.getElementById('player-modal');
-    if (!iframe || !pm) {
-        console.error('Player elements not found.');
+        alert(
+            'No stream selected.'
+        );
+
         return;
     }
 
-    let playerUrl = 'https://chaudhary-player.netlify.app/?famcode=' + encodeURIComponent(streamData.url);
-    if (streamData.key) playerUrl += '&key=' + encodeURIComponent(streamData.key);
+    const streamData =
+        { ...pendingStreamData };
+
+    closeTelegramModal();
+
+    const iframe =
+        $('iframePlayer');
+
+    const playerModal =
+        $('player-modal');
+
+    if (!iframe || !playerModal) {
+
+        console.error(
+            'Player elements not found.'
+        );
+
+        return;
+    }
+
+    let playerUrl =
+        'https://chaudhary-player.netlify.app/?famcode=' +
+        encodeURIComponent(
+            streamData.url
+        );
+
+    if (streamData.key) {
+
+        playerUrl +=
+            '&key=' +
+            encodeURIComponent(
+                streamData.key
+            );
+    }
 
     iframe.src = playerUrl;
-    pm.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+
+    playerModal.style.display =
+        'flex';
+
+    document.body.style.overflow =
+        'hidden';
 }
 
-document.addEventListener('click', (e) => {
-    const modal = document.getElementById('telegram-modal');
-    if (modal && e.target === modal) closeTelegramModal();
-});
 
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeTelegramModal();
-});
+/* =========================
+   CLOSE PLAYER
+========================= */
 
 function closePlayer() {
-    const pm = document.getElementById('player-modal');
-    if (pm) pm.style.display = 'none';
-    document.body.style.overflow = 'auto';
-    const iframe = document.getElementById('iframePlayer');
-    if (iframe) iframe.src = '';
-    pendingStreamData = null;
+
+    const modal =
+        $('player-modal');
+
+    const iframe =
+        $('iframePlayer');
+
+    if (iframe) {
+        iframe.src = 'about:blank';
+    }
+
+    if (modal) {
+        modal.style.display = 'none';
+    }
+
+    document.body.style.overflow =
+        '';
 }
 
-// ========== INIT ==========
+
+/* =========================
+   SHARE MODAL
+========================= */
+
+function openShareModal() {
+
+    const modal =
+        $('share-modal');
+
+    if (!modal) return;
+
+    modal.classList.add('active');
+
+    document.body.style.overflow =
+        'hidden';
+}
+
+
+function closeShareModal() {
+
+    const modal =
+        $('share-modal');
+
+    if (modal) {
+        modal.classList.remove('active');
+    }
+
+    document.body.style.overflow =
+        '';
+}
+
+
+/* =========================
+   SHARE LINKS
+========================= */
+
+function shareCurrentPage() {
+
+    const url =
+        window.location.href;
+
+    const title =
+        document.title ||
+        'Live Sports';
+
+    const whatsapp =
+        'https://wa.me/?text=' +
+        encodeURIComponent(
+            `${title}\n${url}`
+        );
+
+    const telegram =
+        'https://t.me/share/url?url=' +
+        encodeURIComponent(url) +
+        '&text=' +
+        encodeURIComponent(title);
+
+    const twitter =
+        'https://twitter.com/intent/tweet?text=' +
+        encodeURIComponent(title) +
+        '&url=' +
+        encodeURIComponent(url);
+
+    const facebook =
+        'https://www.facebook.com/sharer/sharer.php?u=' +
+        encodeURIComponent(url);
+
+    const whatsappBtn =
+        $('share-whatsapp');
+
+    const telegramBtn =
+        $('share-telegram');
+
+    const twitterBtn =
+        $('share-twitter');
+
+    const facebookBtn =
+        $('share-facebook');
+
+    if (whatsappBtn) {
+        whatsappBtn.href = whatsapp;
+    }
+
+    if (telegramBtn) {
+        telegramBtn.href = telegram;
+    }
+
+    if (twitterBtn) {
+        twitterBtn.href = twitter;
+    }
+
+    if (facebookBtn) {
+        facebookBtn.href = facebook;
+}
+
+
+/* =========================
+   SCROLL TO MATCHES
+========================= */
+
+function scrollToMatches() {
+
+    const section =
+        $('live-matches');
+
+    if (!section) return;
+
+    section.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+    });
+}
+
+
+/* =========================
+   REFRESH
+========================= */
+
+function refreshMatches() {
+
+    const button =
+        $('refresh-btn');
+
+    if (button) {
+        button.classList.add(
+            'rotating'
+        );
+    }
+
+    fetchLatestMatches()
+        .finally(() => {
+
+            if (button) {
+                setTimeout(() => {
+                    button.classList.remove(
+                        'rotating'
+                    );
+                }, 500);
+            }
+        });
+}
+
+
+/* =========================
+   STATS
+========================= */
+
+function updateStats() {
+
+    const totalMatches =
+        $('totalMatches');
+
+    const categoriesCount =
+        $('categoriesCount');
+
+    if (totalMatches) {
+        totalMatches.textContent =
+            matchesData.length;
+    }
+
+    if (categoriesCount) {
+
+        const categories =
+            new Set(
+                matchesData
+                    .map(
+                        match => match.category
+                    )
+                    .filter(Boolean)
+            );
+
+        categoriesCount.textContent =
+            categories.size;
+    }
+}
+
+
+/* =========================
+   CLOSE MODALS ON BACKDROP
+========================= */
+
+document.addEventListener(
+    'click',
+    event => {
+
+        if (
+            event.target.classList.contains(
+                'modal-overlay'
+            )
+        ) {
+
+            closeTelegramModal();
+            closeShareModal();
+            closePlayer();
+        }
+    }
+);
+
+
+/* =========================
+   ESC KEY
+========================= */
+
+document.addEventListener(
+    'keydown',
+    event => {
+
+        if (event.key !== 'Escape') return;
+
+        closeTelegramModal();
+        closeShareModal();
+        closePlayer();
+    }
+);
+
+
+/* =========================
+   BACK BUTTON
+========================= */
+
+window.addEventListener(
+    'popstate',
+    () => {
+
+        const params =
+            new URLSearchParams(
+                location.search
+            );
+
+        const matchIndex =
+            params.get('match');
+
+        if (
+            matchIndex !== null &&
+            matchesData[Number(matchIndex)]
+        ) {
+
+            showDetails(
+                Number(matchIndex)
+            );
+
+        } else {
+
+            showHome();
+        }
+    }
+);
+
+
+/* =========================
+   INITIAL LOAD
+========================= */
+
 fetchLatestMatches().then(() => {
-    const p = new URLSearchParams(location.search).get('match');
-    if (p !== null && !isNaN(p) && matchesData[+p]) setTimeout(() => showDetails(+p), 500);
+
+    const params =
+        new URLSearchParams(
+            location.search
+        );
+
+    const matchIndex =
+        params.get('match');
+
+    if (
+        matchIndex !== null &&
+        !isNaN(matchIndex) &&
+        matchesData[Number(matchIndex)]
+    ) {
+
+        setTimeout(() => {
+
+            showDetails(
+                Number(matchIndex)
+            );
+
+        }, 500);
+    }
+
 });
 
-setInterval(fetchLatestMatches, 120000);
-console.log('✅ Script loaded successfully!');
+
+/* =========================
+   AUTO REFRESH
+========================= */
+
+setInterval(
+    fetchLatestMatches,
+    120000
+);
+
+
+/* =========================
+   GLOBAL HELPERS
+========================= */
+
+window.filterCategory =
+    filterCategory;
+
+window.showDetails =
+    showDetails;
+
+window.showHome =
+    showHome;
+
+window.triggerStreamFlow =
+    triggerStreamFlow;
+
+window.startSelectedStream =
+    startSelectedStream;
+
+window.closeTelegramModal =
+    closeTelegramModal;
+
+window.closePlayer =
+    closePlayer;
+
+window.openShareModal =
+    openShareModal;
+
+window.closeShareModal =
+    closeShareModal;
+
+window.shareCurrentPage =
+    shareCurrentPage;
+
+window.scrollToMatches =
+    scrollToMatches;
+
+window.refreshMatches =
+    refreshMatches;
+
+console.log(
+    '✅ CricZone script loaded successfully!'
+);
