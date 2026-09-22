@@ -985,7 +985,143 @@ document.addEventListener('keydown', function(e) {
     }
 });
 </script>
+<!-- ============================================================
+     CRICZONE — ANTI INSPECT / DEVTOOLS PROTECTION
+     ============================================================ -->
 
+<script>
+(function () {
+    "use strict";
+
+    /* -----------------------------------------
+       1. Disable right click
+       ----------------------------------------- */
+    document.addEventListener("contextmenu", function (e) {
+        e.preventDefault();
+    });
+
+
+    /* -----------------------------------------
+       2. Block common browser shortcuts
+       ----------------------------------------- */
+    document.addEventListener("keydown", function (e) {
+
+        const key = e.key.toUpperCase();
+
+        // F12
+        if (e.key === "F12") {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+
+        // Ctrl + Shift + I
+        if (e.ctrlKey && e.shiftKey && key === "I") {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+
+        // Ctrl + Shift + J
+        if (e.ctrlKey && e.shiftKey && key === "J") {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+
+        // Ctrl + Shift + C
+        if (e.ctrlKey && e.shiftKey && key === "C") {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+
+        // Ctrl + U
+        if (e.ctrlKey && key === "U") {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+
+        // Ctrl + S
+        if (e.ctrlKey && key === "S") {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    }, true);
+
+
+    /* -----------------------------------------
+       3. DevTools size detection
+       ----------------------------------------- */
+
+    let devtoolsDetected = false;
+
+    const threshold = 160;
+
+    function checkDevTools() {
+
+        const widthDifference =
+            window.outerWidth - window.innerWidth;
+
+        const heightDifference =
+            window.outerHeight - window.innerHeight;
+
+        const detected =
+            widthDifference > threshold ||
+            heightDifference > threshold;
+
+        if (detected && !devtoolsDetected) {
+
+            devtoolsDetected = true;
+
+            console.clear();
+
+            /*
+             * Hide sensitive page content.
+             */
+            document.documentElement.style.visibility = "hidden";
+
+        } else if (!detected && devtoolsDetected) {
+
+            devtoolsDetected = false;
+
+            document.documentElement.style.visibility = "";
+        }
+    }
+
+    setInterval(checkDevTools, 1000);
+
+
+    /* -----------------------------------------
+       4. Disable text selection
+       ----------------------------------------- */
+
+    document.addEventListener("selectstart", function (e) {
+        e.preventDefault();
+    });
+
+
+    /* -----------------------------------------
+       5. Disable drag
+       ----------------------------------------- */
+
+    document.addEventListener("dragstart", function (e) {
+        e.preventDefault();
+    });
+
+
+    /* -----------------------------------------
+       6. Clear console messages
+       ----------------------------------------- */
+
+    setInterval(function () {
+        console.clear();
+    }, 2000);
+
+})();
+</script>
 </body>
 
 </html>
