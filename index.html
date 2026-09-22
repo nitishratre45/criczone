@@ -959,7 +959,32 @@
     ========================================== -->
 
     <script src="script.js"></script>
+    <script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+});
+</script>
+<script>
+document.addEventListener('keydown', function(e) {
+    // F12
+    if (e.key === 'F12') {
+        e.preventDefault();
+        return;
+    }
 
+    // Ctrl + Shift + I / J
+    if (e.ctrlKey && e.shiftKey && ['I', 'J'].includes(e.key.toUpperCase())) {
+        e.preventDefault();
+        return;
+    }
+
+    // Ctrl + U
+    if (e.ctrlKey && e.key.toUpperCase() === 'U') {
+        e.preventDefault();
+        return;
+    }
+});
+</script>
 
 </body>
 
