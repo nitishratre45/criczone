@@ -725,19 +725,16 @@ function closeShareModal() {
         '';
 }
 
-
 /* =========================
    SHARE LINKS
 ========================= */
 
 function shareCurrentPage() {
 
-    const url =
-        window.location.href;
+    const url = window.location.href;
 
     const title =
-        document.title ||
-        'Live Sports';
+        document.title || 'Live Sports';
 
     const whatsapp =
         'https://wa.me/?text=' +
@@ -762,16 +759,16 @@ function shareCurrentPage() {
         encodeURIComponent(url);
 
     const whatsappBtn =
-        $('share-whatsapp');
+        document.getElementById('share-whatsapp');
 
     const telegramBtn =
-        $('share-telegram');
+        document.getElementById('share-telegram');
 
     const twitterBtn =
-        $('share-twitter');
+        document.getElementById('share-twitter');
 
     const facebookBtn =
-        $('share-facebook');
+        document.getElementById('share-facebook');
 
     if (whatsappBtn) {
         whatsappBtn.href = whatsapp;
@@ -787,24 +784,25 @@ function shareCurrentPage() {
 
     if (facebookBtn) {
         facebookBtn.href = facebook;
+    }
 }
 
 
 /* =========================
-   SCROLL TO MATCHES
+   SCROLL
 ========================= */
 
 function scrollToMatches() {
 
     const section =
-        $('live-matches');
+        document.getElementById('live-matches');
 
-    if (!section) return;
-
-    section.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-    });
+    if (section) {
+        section.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
 }
 
 
@@ -814,133 +812,71 @@ function scrollToMatches() {
 
 function refreshMatches() {
 
-    const button =
-        $('refresh-btn');
+    fetchLatestMatches();
+}
 
-    if (button) {
-        button.classList.add(
-            'rotating'
-        );
-    }
 
-    fetchLatestMatches()
-        .finally(() => {
+/* =========================
+   UI HELPERS
+========================= */
 
-            if (button) {
-                setTimeout(() => {
-                    button.classList.remove(
-                        'rotating'
-                    );
-                }, 500);
-            }
+function filterCategory(category) {
+
+    currentCategory =
+        category || 'ALL';
+
+    showHome();
+    setupCategories();
+    renderMatches();
+
+    const section =
+        document.getElementById('live-matches');
+
+    if (section) {
+        section.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
         });
-}
-
-
-/* =========================
-   STATS
-========================= */
-
-function updateStats() {
-
-    const totalMatches =
-        $('totalMatches');
-
-    const categoriesCount =
-        $('categoriesCount');
-
-    if (totalMatches) {
-        totalMatches.textContent =
-            matchesData.length;
-    }
-
-    if (categoriesCount) {
-
-        const categories =
-            new Set(
-                matchesData
-                    .map(
-                        match => match.category
-                    )
-                    .filter(Boolean)
-            );
-
-        categoriesCount.textContent =
-            categories.size;
     }
 }
 
 
 /* =========================
-   CLOSE MODALS ON BACKDROP
+   SEARCH
 ========================= */
 
-document.addEventListener(
-    'click',
-    event => {
+const matchSearch =
+    document.getElementById('match-search');
 
-        if (
-            event.target.classList.contains(
-                'modal-overlay'
-            )
-        ) {
+if (matchSearch) {
 
-            closeTelegramModal();
-            closeShareModal();
-            closePlayer();
+    matchSearch.addEventListener(
+        'input',
+        function () {
+
+            const query =
+                matchSearch.value
+                    .trim()
+                    .toLowerCase();
+
+            document
+                .querySelectorAll(
+                    '#home-view .match-card'
+                )
+                .forEach(function (card) {
+
+                    const text =
+                        card.innerText
+                            .toLowerCase();
+
+                    card.style.display =
+                        text.includes(query)
+                            ? ''
+                            : 'none';
+                });
         }
-    }
-);
-
-
-/* =========================
-   ESC KEY
-========================= */
-
-document.addEventListener(
-    'keydown',
-    event => {
-
-        if (event.key !== 'Escape') return;
-
-        closeTelegramModal();
-        closeShareModal();
-        closePlayer();
-    }
-);
-
-
-/* =========================
-   BACK BUTTON
-========================= */
-
-window.addEventListener(
-    'popstate',
-    () => {
-
-        const params =
-            new URLSearchParams(
-                location.search
-            );
-
-        const matchIndex =
-            params.get('match');
-
-        if (
-            matchIndex !== null &&
-            matchesData[Number(matchIndex)]
-        ) {
-
-            showDetails(
-                Number(matchIndex)
-            );
-
-        } else {
-
-            showHome();
-        }
-    }
-);
+    );
+}
 
 
 /* =========================
@@ -951,7 +887,7 @@ fetchLatestMatches().then(() => {
 
     const params =
         new URLSearchParams(
-            location.search
+            window.location.search
         );
 
     const matchIndex =
@@ -986,17 +922,26 @@ setInterval(
 
 
 /* =========================
-   GLOBAL HELPERS
+   GLOBAL FUNCTIONS
 ========================= */
 
 window.filterCategory =
     filterCategory;
 
-window.showDetails =
-    showDetails;
+window.scrollToMatches =
+    scrollToMatches;
+
+window.refreshMatches =
+    refreshMatches;
+
+window.shareCurrentPage =
+    shareCurrentPage;
 
 window.showHome =
     showHome;
+
+window.showDetails =
+    showDetails;
 
 window.triggerStreamFlow =
     triggerStreamFlow;
@@ -1016,15 +961,6 @@ window.openShareModal =
 window.closeShareModal =
     closeShareModal;
 
-window.shareCurrentPage =
-    shareCurrentPage;
-
-window.scrollToMatches =
-    scrollToMatches;
-
-window.refreshMatches =
-    refreshMatches;
-
 console.log(
-    '✅ CricZone script loaded successfully!'
+    '✅ Script loaded successfully!'
 );
