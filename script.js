@@ -366,33 +366,126 @@ function showHome() {
 }
 
 // ========== STREAM FLOW ==========
+
 function triggerStreamFlow(url, key = "") {
-    if (!url) return alert('Stream URL not available.');
-    pendingStreamData = { url, key };
-    document.getElementById('telegram-modal')?.classList.add('active');
+    if (!url) {
+        alert('Stream URL not available.');
+        return;
+    }
+
+    pendingStreamData = {
+        url: url,
+        key: key
+    };
+
+    const modal = document.getElementById('telegram-modal');
+
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
 }
 
+
+// CONTINUE BUTTON
 function startSelectedStream() {
-    if (!pendingStreamData?.url) return alert('No stream selected.');
-    document.getElementById('telegram-modal')?.classList.remove('active');
+
+    if (!pendingStreamData?.url) {
+        alert('No stream selected.');
+        return;
+    }
+
+    const modal = document.getElementById('telegram-modal');
+
+    if (modal) {
+        modal.classList.remove('active');
+    }
 
     const iframe = document.getElementById('iframePlayer');
-    if (!iframe) return;
 
-    let playerUrl = "https://chaudhary-player.netlify.app/?famcode=" + encodeURIComponent(pendingStreamData.url);
-    if (pendingStreamData.key) playerUrl += "&key=" + encodeURIComponent(pendingStreamData.key);
+    if (!iframe) {
+        console.error('iframePlayer not found');
+        return;
+    }
+
+    let playerUrl =
+        "https://chaudhary-player.netlify.app/?famcode=" +
+        encodeURIComponent(pendingStreamData.url);
+
+    if (pendingStreamData.key) {
+        playerUrl +=
+            "&key=" +
+            encodeURIComponent(pendingStreamData.key);
+    }
+
     iframe.src = playerUrl;
 
     const pm = document.getElementById('player-modal');
-    if (pm) { pm.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+
+    if (pm) {
+        pm.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
 }
 
-function closePlayer() {
-    const pm = document.getElementById('player-modal');
-    if (pm) pm.style.display = 'none';
+
+// CANCEL BUTTON
+function closeTelegramModal() {
+
+    const modal = document.getElementById('telegram-modal');
+
+    if (modal) {
+        modal.classList.remove('active');
+    }
+
+    pendingStreamData = null;
+
     document.body.style.overflow = 'auto';
+}
+
+
+// MODAL BACKDROP CLICK
+document.addEventListener('click', function (e) {
+
+    const modal = document.getElementById('telegram-modal');
+
+    if (!modal) return;
+
+    if (e.target === modal) {
+        closeTelegramModal();
+    }
+
+});
+
+
+// ESC KEY
+document.addEventListener('keydown', function (e) {
+
+    if (e.key === 'Escape') {
+        closeTelegramModal();
+    }
+
+});
+
+
+// ========== PLAYER CLOSE ==========
+
+function closePlayer() {
+
+    const pm = document.getElementById('player-modal');
+
+    if (pm) {
+        pm.style.display = 'none';
+    }
+
+    document.body.style.overflow = 'auto';
+
     const iframe = document.getElementById('iframePlayer');
-    if (iframe) iframe.src = '';
+
+    if (iframe) {
+        iframe.src = '';
+    }
+
     pendingStreamData = null;
 }
 
