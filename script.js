@@ -59,61 +59,74 @@ function setupCategories() {
     });
 }
 
-// ========== RENDER MATCHES ==========
+// ========== RENDER MATCHES — PREMIUM OTT HOME ==========
 function renderMatches() {
-    const homeView = document.getElementById('home-view');
-    if (!homeView) return;
-    homeView.innerHTML = '';
+    const home = document.getElementById('home-view');
+    if (!home) return;
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(0,0,0,0);
     const todayTime = today.getTime();
 
-    const filtered = matchesData
+    let filtered = matchesData
         .filter(m => currentCategory === 'ALL' || m.category?.trim().toLowerCase() === currentCategory.toLowerCase())
-        .sort((a, b) => {
-            const dA = getDatePart(a.startTime), dB = getDatePart(b.startTime);
-            const isTodayA = dA === todayTime, isTodayB = dB === todayTime;
-            if (isTodayA && !isTodayB) return -1;
-            if (!isTodayA && isTodayB) return 1;
-            if (dA !== dB) return dA - dB;
-            return parseCustomDate(a.startTime) - parseCustomDate(b.startTime);
-        });
+        .sort((a,b) => parseCustomDate(a.startTime) - parseCustomDate(b.startTime));
 
     if (!filtered.length) {
-        homeView.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#64748b;padding:4rem 1rem;">⚡ No matches found.</div>`;
+        home.innerHTML = '<div class="empty-state">No matches available right now.</div>';
         return;
     }
 
-    filtered.forEach(match => {
-        const idx = matchesData.indexOf(match);
-        const isLive = match.status === 'LIVE';
-        const imgUrl = match.image || match.image_cdn?.APP || '';
-        const isToday = getDatePart(match.startTime) === todayTime;
+    const live = filtered.filter(m => String(m.status).toUpperCase() === 'LIVE');
+    const upcoming = filtered.filter(m => String(m.status).toUpperCase() !== 'LIVE');
+    const hero = live[0] || filtered[0];
+    const heroIndex = matchesData.indexOf(hero);
 
-        const card = document.createElement('div');
-        card.className = 'match-card';
-        card.onclick = () => showDetails(idx);
-        card.innerHTML = `
-            <div class="card-thumb-wrap">
-                <span class="status-badge ${isLive ? 'badge-live' : 'badge-upcoming'}">${match.status || 'UPCOMING'}</span>
-                ${isToday ? '<span class="today-badge-card">TODAY</span>' : ''}
-                <img class="card-img" src="${imgUrl}" alt="${match.title}" onerror="this.src='https://via.placeholder.com/300x160/1e293b/64748b?text=No+Image'">
-                <button class="share-btn-3dot" onclick="openShareModal(${idx});event.stopPropagation();" title="Share">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                    </svg>
-                </button>
+    const img = m => m?.image || m?.image_cdn?.APP || '';
+    const safe = v => String(v ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
+
+    const card = (m) => {
+        const idx = matchesData.indexOf(m);
+        const isLive = String(m.status).toUpperCase() === 'LIVE';
+        return `<article class="ott-card" onclick="showDetails(${idx})">
+            <div class="ott-card-media">
+                <img src="${img(m)}" alt="${safe(m.title || 'Match')}" loading="lazy" onerror="this.src='https://via.placeholder.com/640x360/111827/94a3b8?text=CRICZONE'">
+                <div class="ott-card-gradient"></div>
+                <span class="ott-live-pill ${isLive ? '' : 'upcoming'}">${isLive ? '● LIVE' : safe(m.status || 'UPCOMING')}</span>
+                <button class="ott-share" onclick="event.stopPropagation();openShareModal(${idx})" aria-label="Share">↗</button>
+                <div class="ott-card-info">
+                    <div class="ott-card-cat">${safe(m.category || 'SPORTS')}</div>
+                    <h3>${safe(m.title || 'Live Match')}</h3>
+                    <p>${safe(m.tournament || '')}</p>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="card-category">${match.category || 'Uncategorized'}</div>
-                <div class="card-title">${match.title || 'Untitled'}</div>
-                <div class="card-tournament">${match.tournament || ''}</div>
-                <div class="card-time">🕒 ${match.startTime || 'TBD'}</div>
-            </div>`;
-        homeView.appendChild(card);
-    });
+        </article>`;
+    };
+
+    const rail = (title, items, cls='') => items.length ? `<section class="ott-section ${cls}">
+        <div class="ott-section-head"><h2>${title}</h2><span>›</span></div>
+        <div class="ott-rail">${items.slice(0,12).map(card).join('')}</div>
+    </section>` : '';
+
+    home.innerHTML = `
+        <section class="ott-hero" onclick="showDetails(${heroIndex})">
+            <img src="${img(hero)}" alt="${safe(hero.title || 'Live Match')}" onerror="this.src='https://via.placeholder.com/1280x720/111827/94a3b8?text=CRICZONE'">
+            <div class="ott-hero-overlay"></div>
+            <div class="ott-hero-content">
+                <div class="ott-eyebrow">${String(hero.status).toUpperCase()==='LIVE' ? '● LIVE NOW' : 'FEATURED LIVE SPORTS'}</div>
+                <div class="ott-hero-category">${safe(hero.tournament || hero.category || 'CRICKET')}</div>
+                <h1>${safe(hero.title || 'Live Cricket')}</h1>
+                <p>${safe(hero.startTime || 'Watch live action now')}</p>
+                <div class="ott-hero-actions">
+                    <button class="ott-watch" onclick="event.stopPropagation();showDetails(${heroIndex})">▶ Watch Now</button>
+                    <button class="ott-more" onclick="event.stopPropagation();showDetails(${heroIndex})">ⓘ Details</button>
+                </div>
+            </div>
+        </section>
+        ${rail('Live Now', live)}
+        ${rail('Upcoming Matches', upcoming)}
+        ${rail('All Matches', filtered)}
+    `;
 }
 
 // ========== SHARE MODAL ==========
@@ -365,36 +378,95 @@ function showHome() {
     window.history.pushState({}, '', url);
 }
 
-// ========== STREAM FLOW ==========
+// ========== SHAKA STREAM FLOW ==========
+let shakaPlayer = null;
+
 function triggerStreamFlow(url, key = "") {
     if (!url) return alert('Stream URL not available.');
     pendingStreamData = { url, key };
-    document.getElementById('telegram-modal')?.classList.add('active');
+    const modal = document.getElementById('telegram-modal');
+    if (modal) modal.classList.add('active');
 }
 
-function startSelectedStream() {
-    if (!pendingStreamData?.url) return alert('No stream selected.');
+function closeTelegramModal() {
     document.getElementById('telegram-modal')?.classList.remove('active');
-
-    const iframe = document.getElementById('iframePlayer');
-    if (!iframe) return;
-
-    let playerUrl = "https://chaudhary-player.netlify.app/?famcode=" + encodeURIComponent(pendingStreamData.url);
-    if (pendingStreamData.key) playerUrl += "&key=" + encodeURIComponent(pendingStreamData.key);
-    iframe.src = playerUrl;
-
-    const pm = document.getElementById('player-modal');
-    if (pm) { pm.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+    pendingStreamData = null;
 }
 
-function closePlayer() {
+function parseClearKey(key) {
+    if (!key) return null;
+    try {
+        if (typeof key === 'object') return key;
+        const obj = JSON.parse(key);
+        if (obj?.keys) {
+            const out = {};
+            obj.keys.forEach(k => { if (k.kid && k.k) out[k.kid.replace(/[-:]/g,'')] = k.k.replace(/[-:]/g,''); });
+            return Object.keys(out).length ? out : null;
+        }
+        if (obj?.kid && obj?.key) return { [obj.kid.replace(/[-:]/g,'')]: obj.key.replace(/[-:]/g,'') };
+    } catch(e) {}
+    const m = String(key).match(/^([0-9a-fA-F-]{16,64})\s*[:|]\s*([0-9a-fA-F-]{16,64})$/);
+    if (m) return { [m[1].replace(/[-:]/g,'')]: m[2].replace(/[-:]/g,'') };
+    return null;
+}
+
+async function startSelectedStream() {
+    if (!pendingStreamData?.url) return alert('No stream selected.');
+    const stream = {...pendingStreamData};
+    closeTelegramModal();
+
+    const modal = document.getElementById('player-modal');
+    const video = document.getElementById('shakaVideo');
+    if (!modal || !video) return;
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    try {
+        if (!window.shaka) throw new Error('Shaka Player library not loaded.');
+        shaka.polyfill.installAll();
+        if (!shaka.Player.isBrowserSupported()) throw new Error('This browser does not support Shaka Player.');
+
+        if (shakaPlayer) { await shakaPlayer.destroy(); shakaPlayer = null; }
+        shakaPlayer = new shaka.Player(video);
+
+        const clearKeys = parseClearKey(stream.key);
+        if (clearKeys) shakaPlayer.configure({ drm: { clearKeys } });
+
+        shakaPlayer.addEventListener('error', e => console.error('Shaka error:', e.detail));
+        await shakaPlayer.load(stream.url);
+        await video.play().catch(() => {});
+    } catch (err) {
+        console.error('Player error:', err);
+        closePlayer(false);
+        alert('Unable to play this stream in Shaka Player. The stream format, CORS policy, or DRM configuration may not be supported.');
+    }
+}
+
+async function closePlayer(clearPending = true) {
+    if (shakaPlayer) {
+        try { await shakaPlayer.destroy(); } catch(e) {}
+        shakaPlayer = null;
+    }
+    const video = document.getElementById('shakaVideo');
+    if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
     const pm = document.getElementById('player-modal');
     if (pm) pm.style.display = 'none';
     document.body.style.overflow = 'auto';
-    const iframe = document.getElementById('iframePlayer');
-    if (iframe) iframe.src = '';
-    pendingStreamData = null;
+    if (clearPending) pendingStreamData = null;
 }
+
+document.addEventListener('click', e => {
+    const modal = document.getElementById('telegram-modal');
+    if (modal && e.target === modal) closeTelegramModal();
+});
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        closeTelegramModal();
+        if (document.getElementById('player-modal')?.style.display === 'flex') closePlayer();
+    }
+});
 
 // ========== INIT ==========
 fetchLatestMatches().then(() => {
