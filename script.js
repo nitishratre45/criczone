@@ -3048,7 +3048,28 @@ function updateStats() {
     }
 
 }
+window.addEventListener("orientationchange", () => {
 
+    const modal =
+        document.getElementById("player-modal");
+
+    if (!modal) {
+        return;
+    }
+
+    if (modal.style.display === "flex") {
+
+        requestAnimationFrame(() => {
+
+            window.dispatchEvent(
+                new Event("resize")
+            );
+
+        });
+
+    }
+
+});
 
 /* =========================================================
    MODAL BACKDROP
