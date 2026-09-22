@@ -5306,3 +5306,282 @@ img {
         animation: none !important;
     }
 }
+/* ============================================================
+   CRICZONE — PREMIUM LIVE PLAYER ANIMATIONS
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   PLAYER OPEN
+   ------------------------------------------------------------ */
+
+#player-modal[style*="display: flex"] {
+    animation: playerModalIn .22s ease-out both;
+}
+
+@keyframes playerModalIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+
+/* ------------------------------------------------------------
+   VIDEO CONTAINER ENTRY
+   ------------------------------------------------------------ */
+
+#player-modal[style*="display: flex"] .iframe-container {
+    animation: playerVideoIn .28s cubic-bezier(.22,.8,.25,1) both;
+}
+
+@keyframes playerVideoIn {
+    from {
+        opacity: 0;
+        transform: scale(.985);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+
+/* ------------------------------------------------------------
+   TOPBAR ENTRY
+   ------------------------------------------------------------ */
+
+#player-modal[style*="display: flex"] .player-topbar {
+    animation: playerTopbarIn .25s ease-out both;
+}
+
+@keyframes playerTopbarIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* ------------------------------------------------------------
+   WATCHING COUNTER — SOFT GLOW
+   ------------------------------------------------------------ */
+
+#player-modal #live-watching.active {
+    animation:
+        watchingAppear .25s ease-out both,
+        watchingGlow 2.8s ease-in-out infinite .25s;
+}
+
+@keyframes watchingAppear {
+    from {
+        opacity: 0;
+        transform:
+            translateX(-50%)
+            translateY(-5px)
+            scale(.94);
+    }
+
+    to {
+        opacity: 1;
+        transform:
+            translateX(-50%)
+            translateY(0)
+            scale(1);
+    }
+}
+
+@keyframes watchingGlow {
+    0%,
+    100% {
+        box-shadow:
+            0 6px 22px rgba(0,0,0,.38),
+            0 0 0 rgba(32,232,137,0);
+    }
+
+    50% {
+        box-shadow:
+            0 6px 22px rgba(0,0,0,.38),
+            0 0 16px rgba(32,232,137,.12);
+    }
+}
+
+
+/* ------------------------------------------------------------
+   WATCHING GREEN DOT
+   ------------------------------------------------------------ */
+
+#player-modal .watching-dot {
+    animation:
+        watchingDotPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes watchingDotPulse {
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(.72);
+        opacity: .65;
+    }
+}
+
+
+/* ------------------------------------------------------------
+   LIVE RED DOT
+   ------------------------------------------------------------ */
+
+#player-modal .player-live-dot {
+    animation:
+        liveDotPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes liveDotPulse {
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(.72);
+        opacity: .55;
+    }
+}
+
+
+/* ------------------------------------------------------------
+   WATCHING NUMBER — VERY SUBTLE
+   ------------------------------------------------------------ */
+
+#player-modal #watching-count {
+    transition:
+        transform .18s ease,
+        opacity .18s ease;
+}
+
+
+/*
+   JS/Firebase number update ke time
+   browser naturally text update karega,
+   isliye koi aggressive animation nahi.
+*/
+
+
+/* ------------------------------------------------------------
+   CLOSE BUTTON
+   ------------------------------------------------------------ */
+
+#player-modal .close-player-btn {
+    transition:
+        transform .18s ease,
+        background .18s ease,
+        border-color .18s ease,
+        color .18s ease,
+        box-shadow .18s ease;
+}
+
+#player-modal .close-player-btn:hover {
+    transform: translateY(-1px);
+}
+
+#player-modal .close-player-btn:active {
+    transform: scale(.94);
+}
+
+
+/* ------------------------------------------------------------
+   LIVE STATUS
+   ------------------------------------------------------------ */
+
+#player-modal .player-live-status {
+    transition:
+        opacity .2s ease;
+}
+
+
+/* ------------------------------------------------------------
+   MOBILE TOUCH FEEDBACK
+   ------------------------------------------------------------ */
+
+@media (hover: none) {
+
+    #player-modal .close-player-btn:active {
+        background:
+            rgba(255,49,88,.15) !important;
+
+        border-color:
+            rgba(255,49,88,.35) !important;
+    }
+
+}
+
+
+/* ------------------------------------------------------------
+   LANDSCAPE — KEEP ANIMATION SMALL
+   ------------------------------------------------------------ */
+
+@media (max-width: 900px)
+       and (orientation: landscape) {
+
+    #player-modal #live-watching.active {
+        animation:
+            watchingAppearLandscape .22s ease-out both;
+    }
+
+    @keyframes watchingAppearLandscape {
+
+        from {
+            opacity: 0;
+
+            transform:
+                translateX(-50%)
+                translateY(-3px)
+                scale(.95);
+        }
+
+        to {
+            opacity: 1;
+
+            transform:
+                translateX(-50%)
+                translateY(0)
+                scale(1);
+        }
+
+    }
+
+}
+
+
+/* ------------------------------------------------------------
+   REDUCED MOTION
+   ------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+
+    #player-modal,
+    #player-modal .iframe-container,
+    #player-modal .player-topbar,
+    #player-modal #live-watching,
+    #player-modal .watching-dot,
+    #player-modal .player-live-dot {
+        animation: none !important;
+    }
+
+    #player-modal .close-player-btn {
+        transition: none !important;
+    }
+
+}
