@@ -1,102 +1,758 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="hosting-provider" content="Netlify">
-<meta name="netlify-deploy" content="https://netlify.new/?utm_campaign=ai-legible&amp;utm_source=meta&amp;utm_medium=referral&amp;utm_id=fd464937-099e-48b5-9109-d8100578210d">
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="referrer" content="no-referrer" />
+    <meta charset="UTF-8">
 
-<title>Live TV | Live cricxzone</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="style.css" />
+    <meta name="referrer"
+          content="no-referrer">
 
-<!-- Shaka Player: browser-native DASH/HLS playback layer -->
-<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.compiled.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
+    <meta name="theme-color"
+          content="#050505">
+
+    <title>CRICZONE LIVE — Live Sports</title>
+
+    <!-- Existing dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="preconnect"
+          href="https://fonts.googleapis.com">
+
+    <link rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+          rel="stylesheet">
+
+    <link rel="stylesheet"
+          href="style.css">
+
+    <!-- Existing player dependency -->
+    <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.compiled.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
 </head>
+
 
 <body>
 
-<nav class="glass-nav">
-    <div class="nav-logo" onclick="filterCategory('ALL')">
-        <div class="logo-icon">▶</div>
-        <div class="logo-text">criczone <span>LIVE</span></div>
+    <!-- =========================================
+         BACKGROUND
+    ========================================== -->
+
+    <div class="site-bg">
+        <div class="bg-orb bg-orb-one"></div>
+        <div class="bg-orb bg-orb-two"></div>
+        <div class="bg-grid"></div>
     </div>
-    <div class="live-badge-nav">🔴 LIVE TV</div>
-</nav>
 
-<div class="main-container">
 
-    <div id="loader">Fetching Latest Updated Streams...</div>
+    <!-- =========================================
+         NAVBAR
+    ========================================== -->
 
-    <div id="category-container" class="category-container" style="display: none;"></div>
+    <header class="site-header">
 
-    <div id="home-view" class="matches-grid"></div>
+        <nav class="navbar">
 
-    <div id="detail-view" class="detail-view" style="display: none;">
-        <button class="back-btn" onclick="showHome()">← Back to Matches</button>
+            <div class="brand"
+                 onclick="showHome()">
 
-        <button id="share-detail-btn" class="share-detail-btn" title="Share this match">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="18" cy="5" r="3"></circle>
-                <circle cx="6" cy="12" r="3"></circle>
-                <circle cx="18" cy="19" r="3"></circle>
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-            </svg>
+                <div class="brand-mark">
+                    <span>▶</span>
+                </div>
+
+                <div class="brand-name">
+                    CRICZONE
+                    <small>LIVE</small>
+                </div>
+
+            </div>
+
+
+            <div class="nav-links">
+
+                <button onclick="showHome()">
+                    Home
+                </button>
+
+                <button onclick="scrollToMatches()">
+                    Live
+                </button>
+
+                <button onclick="scrollToMatches()">
+                    Sports
+                </button>
+
+            </div>
+
+
+            <div class="nav-right">
+
+                <div class="nav-live">
+                    <span class="live-dot"></span>
+                    LIVE TV
+                </div>
+
+                <button class="nav-menu"
+                        onclick="scrollToMatches()">
+
+                    <span></span>
+                    <span></span>
+                    <span></span>
+
+                </button>
+
+            </div>
+
+        </nav>
+
+    </header>
+
+
+
+    <!-- =========================================
+         MAIN
+    ========================================== -->
+
+    <main class="main-container">
+
+
+        <!-- =====================================
+             LOADER
+        ====================================== -->
+
+        <div id="loader"
+             class="loading-screen">
+
+            <div class="loading-spinner"></div>
+
+            <div>
+                Fetching Latest Updated Streams...
+            </div>
+
+        </div>
+
+
+
+        <!-- =====================================
+             HOME
+        ====================================== -->
+
+        <section id="home-view"
+                 class="home-view">
+
+
+            <!-- =================================
+                 HERO
+            ================================== -->
+
+            <section class="hero-section">
+
+                <div class="hero-content">
+
+                    <div class="hero-eyebrow">
+                        <span class="hero-live-dot"></span>
+                        LIVE SPORTS STREAMING
+                    </div>
+
+
+                    <h1>
+                        YOUR WORLD OF
+                        <span>LIVE SPORTS.</span>
+                    </h1>
+
+
+                    <p>
+                        Watch live matches, follow upcoming events
+                        and stay connected with every moment.
+                    </p>
+
+
+                    <div class="hero-actions">
+
+                        <button class="hero-primary"
+                                onclick="scrollToMatches()">
+
+                            <span>▶</span>
+                            Watch Live
+
+                        </button>
+
+
+                        <button class="hero-secondary"
+                                onclick="scrollToMatches()">
+
+                            Explore Matches
+                            <span>→</span>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Hero visual -->
+
+                <div class="hero-visual">
+
+                    <div class="hero-ring hero-ring-one"></div>
+                    <div class="hero-ring hero-ring-two"></div>
+
+                    <div class="hero-ball">
+
+                        <div class="hero-play">
+                            ▶
+                        </div>
+
+                    </div>
+
+
+                    <div class="floating-card floating-card-one">
+
+                        <span class="mini-live"></span>
+
+                        <div>
+                            <strong>LIVE</strong>
+                            <small>Streaming Now</small>
+                        </div>
+
+                    </div>
+
+
+                    <div class="floating-card floating-card-two">
+
+                        <span>🏏</span>
+
+                        <div>
+                            <strong>CRICKET</strong>
+                            <small>Live Matches</small>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================
+                 QUICK STATS
+            ================================== -->
+
+            <section class="quick-stats">
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        🔴
+                    </div>
+
+                    <div>
+                        <span>LIVE NOW</span>
+                        <strong id="liveCount">--</strong>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        🏆
+                    </div>
+
+                    <div>
+                        <span>MATCHES</span>
+                        <strong id="totalCount">--</strong>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        🌍
+                    </div>
+
+                    <div>
+                        <span>SPORTS</span>
+                        <strong id="sportCount">--</strong>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        ⚡
+                    </div>
+
+                    <div>
+                        <span>UPDATED</span>
+                        <strong>LIVE</strong>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================
+                 SPORTS / CATEGORY
+            ================================== -->
+
+            <section class="sports-section">
+
+                <div class="section-heading">
+
+                    <div>
+                        <span class="section-kicker">
+                            DISCOVER
+                        </span>
+
+                        <h2>
+                            Pick your world
+                        </h2>
+                    </div>
+
+                    <div class="section-line"></div>
+
+                </div>
+
+
+                <div id="category-container"
+                     class="category-container"
+                     style="display:none;">
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================
+                 LIVE MATCHES
+            ================================== -->
+
+            <section id="live-matches"
+                     class="matches-section">
+
+
+                <div class="matches-heading">
+
+                    <div>
+
+                        <span class="section-kicker">
+                            WATCH NOW
+                        </span>
+
+                        <h2>
+                            Live & Upcoming
+                        </h2>
+
+                    </div>
+
+
+                    <div class="match-tools">
+
+                        <div class="search-box">
+
+                            <span>⌕</span>
+
+                            <input
+                                id="match-search"
+                                type="search"
+                                placeholder="Search matches..."
+                                autocomplete="off">
+
+                        </div>
+
+
+                        <button class="refresh-btn"
+                                id="refresh-btn"
+                                onclick="refreshMatches()"
+                                title="Refresh">
+
+                            ↻
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Match cards are inserted by script.js -->
+
+                <div id="matches-container"
+                     class="matches-grid">
+                </div>
+
+
+            </section>
+
+
+
+            <!-- =================================
+                 CTA
+            ================================== -->
+
+            <section class="cta-section">
+
+                <div class="cta-glow"></div>
+
+                <div class="cta-content">
+
+                    <span class="section-kicker">
+                        NEVER MISS A MOMENT
+                    </span>
+
+                    <h2>
+                        Stay connected with
+                        <span>CRICZONE</span>
+                    </h2>
+
+                    <p>
+                        Get live updates, match alerts and
+                        stream information on Telegram.
+                    </p>
+
+
+                    <a href="https://t.me/Rohit_TV"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="telegram-cta">
+
+                        <span>✈</span>
+                        Join Telegram
+
+                    </a>
+
+                </div>
+
+            </section>
+
+
+        </section>
+
+
+
+        <!-- =========================================
+             DETAIL VIEW
+        ========================================== -->
+
+        <section id="detail-view"
+                 class="detail-view"
+                 style="display:none;">
+
+            <div class="detail-topbar">
+
+                <button class="back-btn"
+                        onclick="showHome()">
+
+                    ←
+                    <span>Back to Matches</span>
+
+                </button>
+
+
+                <button id="share-detail-btn"
+                        class="share-detail-btn"
+                        title="Share this match">
+
+                    <svg width="19"
+                         height="19"
+                         viewBox="0 0 24 24"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2.5"
+                         stroke-linecap="round"
+                         stroke-linejoin="round">
+
+                        <circle cx="18"
+                                cy="5"
+                                r="3"></circle>
+
+                        <circle cx="6"
+                                cy="12"
+                                r="3"></circle>
+
+                        <circle cx="18"
+                                cy="19"
+                                r="3"></circle>
+
+                        <line x1="8.59"
+                              y1="13.51"
+                              x2="15.42"
+                              y2="17.49"></line>
+
+                        <line x1="15.41"
+                              y1="6.51"
+                              x2="8.59"
+                              y2="10.49"></line>
+
+                    </svg>
+
+                </button>
+
+            </div>
+
+
+            <div class="detail-layout">
+
+
+                <div class="detail-poster-area">
+
+                    <div class="detail-image-frame">
+
+                        <img id="detail-img"
+                             class="detail-img"
+                             src=""
+                             alt="Match Poster">
+
+                        <div class="detail-image-shade"></div>
+
+                        <div class="detail-live-label">
+                            ● LIVE
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="detail-info">
+
+                    <div id="detail-tournament"
+                         class="detail-category">
+                    </div>
+
+
+                    <h1 id="detail-title">
+                    </h1>
+
+
+                    <div class="detail-meta">
+
+                        <p id="detail-time">
+                        </p>
+
+                        <p id="detail-status">
+                        </p>
+
+                    </div>
+
+
+                    <div class="detail-divider"></div>
+
+
+                    <div class="stream-selection">
+
+                        <div class="selection-heading">
+
+                            <div>
+
+                                <span>
+                                    STREAM OPTIONS
+                                </span>
+
+                                <h3>
+                                    Choose your stream
+                                </h3>
+
+                            </div>
+
+                        </div>
+
+
+                        <div id="quality-grid"
+                             class="quality-grid">
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+
+    <!-- =========================================
+         TELEGRAM MODAL
+    ========================================== -->
+
+    <div id="telegram-modal"
+         class="tg-modal">
+
+        <div class="tg-box">
+
+            <button class="modal-close"
+                    onclick="closeTelegramModal()">
+                ✕
+            </button>
+
+
+            <div class="tg-icon">
+                ✈
+            </div>
+
+
+            <div class="tg-title">
+                Join CRICZONE
+            </div>
+
+
+            <p class="tg-subtitle">
+                Get live updates and stream information
+                through our Telegram channel.
+            </p>
+
+
+            <a href="https://t.me/Rohit_TV"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="tg-btn">
+
+                ✈ Join Telegram
+
+            </a>
+
+
+            <button class="tg-secondary-btn"
+                    onclick="startSelectedStream()">
+
+                Continue to Stream
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =========================================
+         PLAYER MODAL
+    ========================================== -->
+
+    <div id="player-modal">
+
+        <button class="close-player-btn"
+                onclick="closePlayer()">
+
+            ✕ Close Player
+
         </button>
 
-        <img id="detail-img" class="detail-img" src="" alt="Poster">
-        <div id="detail-tournament" class="card-category"></div>
-        <h1 id="detail-title" style="margin: 6px 0;"></h1>
-        <p id="detail-time" style="color: var(--muted); font-size: 13px;"></p>
-        <p id="detail-status" style="color: var(--muted); font-size: 13px; margin-top: 4px;"></p>
 
-        <div class="quality-title">Select Playback Quality</div>
-        <div id="quality-grid" class="quality-grid"></div>
-    </div>
-</div>
+        <div class="iframe-container">
 
-<div id="telegram-modal" class="tg-modal">
-    <div class="tg-box">
-        <div class="tg-icon">📢</div>
-        <h3 class="tg-title">Join Telegram</h3>
-        <p class="tg-subtitle">Get live updates and working streams instantly.</p>
-        <a href="https://t.me/Rohit_TV" target="_blank" rel="noopener noreferrer" class="tg-btn">Join Now</a>
-        <button class="tg-secondary-btn" onclick="startSelectedStream()">Continue to Stream</button>
-    </div>
-</div>
+            <iframe
+                id="iframePlayer"
+                title="CRICZONE Live Player"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowfullscreen
+                playsinline
+                referrerpolicy="no-referrer-when-downgrade">
+            </iframe>
 
-<!-- PLAYER MODAL -->
-<div id="player-modal">
-    <button class="close-player-btn" onclick="closePlayer()">✕ Close Player</button>
-    <div class="iframe-container">
-        <iframe
-            id="iframePlayer"
-            title="Live Player"
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowfullscreen
-            playsinline
-            referrerpolicy="no-referrer-when-downgrade">
-        </iframe>
-    </div>
-</div>
-
-<footer class="developer-footer">
-    <div class="dev-name">
-        <div class="dev-stack">
-            <a href="#" target="_blank" class="dev-link">n</a>
-            <a href="#" target="_blank" class="dev-link">r</a>
         </div>
-    </div>
-    <a href="https://t.me/Rohit_TV" target="_blank" rel="noopener noreferrer" class="telegram-btn">Join Telegram</a>
-    <div class="footer-bottom">© 2026 All Rights Reserved</div>
-</footer>
 
-<script src="script.js"></script>
+    </div>
+
+
+
+    <!-- =========================================
+         FOOTER
+    ========================================== -->
+
+    <footer class="site-footer">
+
+        <div class="footer-inner">
+
+
+            <div class="footer-brand">
+
+                <div class="brand">
+
+                    <div class="brand-mark">
+                        ▶
+                    </div>
+
+                    <div class="brand-name">
+                        CRICZONE
+                        <small>LIVE</small>
+                    </div>
+
+                </div>
+
+
+                <p>
+                    Your home for live sports,
+                    matches and updates.
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="https://t.me/Rohit_TV"
+                   target="_blank"
+                   rel="noopener noreferrer">
+
+                    Telegram
+
+                </a>
+
+                <button onclick="showHome()">
+                    Home
+                </button>
+
+                <button onclick="scrollToMatches()">
+                    Live Matches
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="footer-bottom">
+
+            <span>
+                © 2026 CRICZONE LIVE
+            </span>
+
+            <span>
+                Made for sports fans
+            </span>
+
+        </div>
+
+    </footer>
+
+
+
+    <!-- =========================================
+         SCRIPT
+    ========================================== -->
+
+    <script src="script.js"></script>
 
 </body>
+
 </html>
