@@ -2,6 +2,11 @@
    CRICZONE LIVE — MAIN SCRIPT
    ========================================================= */
 
+
+/* =========================================================
+   GLOBAL STATE
+========================================================= */
+
 let matchesData = [];
 let currentCategory = 'ALL';
 let pendingStreamData = null;
@@ -9,64 +14,534 @@ let pendingStreamData = null;
 
 /* =========================================================
    ORIGINAL DATA SOURCE — DO NOT CHANGE
-   ========================================================= */
+========================================================= */
 
 window.PRIMARY_URL =
     "https://raw.githubusercontent.com/kajju027/Fancode-Events-Json/main/fancode.json";
 
 
 /* =========================================================
-   HELPERS
-   ========================================================= */
+   FIREBASE LIVE VIEWER SYSTEM
+========================================================= */
 
-function $(id) {
-    return document.getElementById(id);
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDm3DIHJfRPEQnrUlYJutRQm8XIA6H3fs",
+    authDomain: "cricket-live-39106.firebaseapp.com",
+    databaseURL:
+        "https://cricket-live-39106-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "cricket-live-39106",
+    storageBucket: "cricket-live-39106.firebasestorage.app",
+    messagingSenderId: "841890143",
+    appId: "1:841890143:web:ca5b87c9395bdc19145eea",
+    measurementId: "G-ZNEZC8YVMX"
+};
+
+
+/*
+    Display system:
+
+    400 = configured baseline
+    + real active viewers
+
+    Example:
+    400 + 5 real viewers = 405
+*/
+
+const VIEWER_BASELINE = 400;
+
+let firebaseApp = null;
+let firebaseDatabase = null;
+let firebaseViewersRef = null;
+
+let currentViewerRef = null;
+let viewerListener = null;
+
+let firebaseReady = false;
+
+
+/* =========================================================
+   LOAD FIREBASE
+========================================================= */
+
+async function initializeFirebase() {
+
+    if (firebaseReady) {
+        return true;
+    }
+
+    try {
+
+        const appModule = await import(
+            "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js"
+        );
+
+        const databaseModule = await import(
+            "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js"
+        );
+
+
+        firebaseApp =
+            appModule.initializeApp(
+                FIREBASE_CONFIG
+            );
+
+
+        firebaseDatabase =
+            databaseModule.getDatabase(
+                firebaseApp
+            );
+
+
+        firebaseViewersRef =
+            databaseModule.ref(
+                firebaseDatabase,
+                "liveViewers"
+            );
+
+
+        window.__firebaseModules = {
+            ref: databaseModule.ref,
+            push: databaseModule.push,
+            set: databaseModule.set,
+            remove: databaseModule.remove,
+            onValue: databaseModule.onValue,
+            onDisconnect: databaseModule.onDisconnect,
+            serverTimestamp:
+                databaseModule.serverTimestamp
+        };
+
+
+        firebaseReady = true;
+
+        console.log(
+            "✅ Firebase viewer system ready"
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "❌ Firebase initialization failed:",
+            error
+        );
+
+        return false;
+    }
 }
 
+
+/* =========================================================
+   UPDATE WATCHING COUNTER
+========================================================= */
+
+function updateWatchingCounter(
+    realVisitors = 0
+) {
+
+    const counter =
+        document.getElementById(
+            "watching-count"
+        );
+
+
+    if (!counter) {
+        return;
+    }
+
+
+    const total =
+        VIEWER_BASELINE +
+        Number(realVisitors || 0);
+
+
+    counter.textContent =
+        total.toLocaleString();
+
+
+    console.log(
+        "👀 Live Watching:",
+        total
+    );
+}
+
+
+/* =========================================================
+   SHOW / HIDE WATCHING COUNTER
+========================================================= */
+
+function showWatchingCounter() {
+
+    const counter =
+        document.getElementById(
+            "live-watching"
+        );
+
+
+    if (!counter) {
+        return;
+    }
+
+
+    counter.classList.add(
+        "active"
+    );
+
+
+    counter.setAttribute(
+        "aria-hidden",
+        "false"
+    );
+
+
+    /*
+        Immediately show the configured
+        baseline while Firebase connects.
+    */
+
+    updateWatchingCounter(0);
+}
+
+
+function hideWatchingCounter() {
+
+    const counter =
+        document.getElementById(
+            "live-watching"
+        );
+
+
+    if (!counter) {
+        return;
+    }
+
+
+    counter.classList.remove(
+        "active"
+    );
+
+
+    counter.setAttribute(
+        "aria-hidden",
+        "true"
+    );
+}
+
+
+/* =========================================================
+   START LIVE PRESENCE
+========================================================= */
+
+async function startLivePresence() {
+
+    /*
+        Prevent duplicate presence when the
+        same player is opened again.
+    */
+
+    if (currentViewerRef) {
+
+        showWatchingCounter();
+
+        return;
+    }
+
+
+    const ready =
+        await initializeFirebase();
+
+
+    if (!ready) {
+
+        /*
+            Firebase failed, but the player
+            should still continue working.
+        */
+
+        showWatchingCounter();
+
+        return;
+    }
+
+
+    const modules =
+        window.__firebaseModules;
+
+
+    if (!modules || !firebaseViewersRef) {
+
+        showWatchingCounter();
+
+        return;
+    }
+
+
+    try {
+
+        /*
+            Create a unique viewer entry.
+        */
+
+        currentViewerRef =
+            modules.push(
+                firebaseViewersRef
+            );
+
+
+        /*
+            IMPORTANT:
+
+            Register disconnect cleanup
+            BEFORE creating the active record.
+        */
+
+        await modules
+            .onDisconnect(
+                currentViewerRef
+            )
+            .remove();
+
+
+        await modules.set(
+            currentViewerRef,
+            {
+                joinedAt:
+                    modules.serverTimestamp(),
+
+                page:
+                    window.location.pathname,
+
+                userAgent:
+                    navigator.userAgent.slice(
+                        0,
+                        120
+                    )
+            }
+        );
+
+
+        /*
+            Listen for all active viewers.
+        */
+
+        viewerListener =
+            modules.onValue(
+                firebaseViewersRef,
+                snapshot => {
+
+                    const realVisitors =
+                        snapshot.size || 0;
+
+
+                    updateWatchingCounter(
+                        realVisitors
+                    );
+
+                },
+                error => {
+
+                    console.error(
+                        "❌ Viewer listener error:",
+                        error
+                    );
+
+                }
+            );
+
+
+        showWatchingCounter();
+
+
+        console.log(
+            "🟢 Live viewer presence started"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "❌ Unable to start viewer presence:",
+            error
+        );
+
+
+        currentViewerRef =
+            null;
+
+
+        showWatchingCounter();
+    }
+}
+
+
+/* =========================================================
+   STOP LIVE PRESENCE
+========================================================= */
+
+async function stopLivePresence() {
+
+    const modules =
+        window.__firebaseModules;
+
+
+    /*
+        Stop Firebase listener.
+    */
+
+    if (
+        viewerListener &&
+        typeof viewerListener === "function"
+    ) {
+
+        try {
+            viewerListener();
+        } catch (error) {
+            console.warn(
+                "Viewer listener cleanup:",
+                error
+            );
+        }
+
+        viewerListener = null;
+    }
+
+
+    /*
+        Remove this viewer immediately.
+    */
+
+    if (
+        currentViewerRef &&
+        modules?.remove
+    ) {
+
+        try {
+
+            await modules.remove(
+                currentViewerRef
+            );
+
+        } catch (error) {
+
+            console.warn(
+                "⚠️ Could not remove viewer immediately:",
+                error
+            );
+        }
+    }
+
+
+    currentViewerRef =
+        null;
+
+
+    hideWatchingCounter();
+
+
+    console.log(
+        "🔴 Live viewer presence stopped"
+    );
+}
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function $(id) {
+
+    return document.getElementById(id);
+
+}
+
+
 function escapeHTML(value) {
-    const div = document.createElement('div');
-    div.textContent = value ?? '';
+
+    const div =
+        document.createElement(
+            'div'
+        );
+
+    div.textContent =
+        value ?? '';
+
     return div.innerHTML;
+
 }
 
 
 /* =========================================================
    DATE PARSER
-   ========================================================= */
+========================================================= */
 
 function parseCustomDate(value) {
 
     if (!value) return 0;
 
-    const stringValue = String(value).trim();
+    const stringValue =
+        String(value).trim();
 
-    const match = stringValue.match(
-        /^(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)\s*(\d{2})-(\d{2})-(\d{4})$/i
-    );
+
+    const match =
+        stringValue.match(
+            /^(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)\s*(\d{2})-(\d{2})-(\d{4})$/i
+        );
+
 
     if (!match) {
-        const parsed = Date.parse(stringValue);
-        return Number.isNaN(parsed) ? 0 : parsed;
+
+        const parsed =
+            Date.parse(
+                stringValue
+            );
+
+        return Number.isNaN(parsed)
+            ? 0
+            : parsed;
     }
 
-    let hour = Number(match[1]);
 
-    const minute = Number(match[2]);
-    const second = Number(match[3]);
+    let hour =
+        Number(match[1]);
 
-    const ampm = match[4].toUpperCase();
+    const minute =
+        Number(match[2]);
 
-    const day = Number(match[5]);
-    const month = Number(match[6]) - 1;
-    const year = Number(match[7]);
+    const second =
+        Number(match[3]);
 
-    if (ampm === 'PM' && hour !== 12) {
+    const ampm =
+        match[4].toUpperCase();
+
+    const day =
+        Number(match[5]);
+
+    const month =
+        Number(match[6]) - 1;
+
+    const year =
+        Number(match[7]);
+
+
+    if (
+        ampm === 'PM' &&
+        hour !== 12
+    ) {
+
         hour += 12;
+
     }
 
-    if (ampm === 'AM' && hour === 12) {
+
+    if (
+        ampm === 'AM' &&
+        hour === 12
+    ) {
+
         hour = 0;
+
     }
+
 
     return new Date(
         year,
@@ -76,66 +551,96 @@ function parseCustomDate(value) {
         minute,
         second
     ).getTime();
+
 }
 
 
 function getDatePart(value) {
 
-    const timestamp = parseCustomDate(value);
+    const timestamp =
+        parseCustomDate(value);
 
     if (!timestamp) return 0;
 
-    const date = new Date(timestamp);
 
-    date.setHours(0, 0, 0, 0);
+    const date =
+        new Date(timestamp);
+
+    date.setHours(
+        0,
+        0,
+        0,
+        0
+    );
+
 
     return date.getTime();
+
 }
 
 
 /* =========================================================
    FETCH MATCHES
-   ========================================================= */
+========================================================= */
 
 async function fetchLatestMatches() {
 
-    const loader = $('loader');
+    const loader =
+        $('loader');
+
 
     if (loader) {
-        loader.style.display = 'flex';
+
+        loader.style.display =
+            'flex';
+
         loader.innerHTML = `
             <div class="loading-spinner"></div>
-            <span>Fetching Latest Updated Streams...</span>
+            <span>
+                Fetching Latest Updated Streams...
+            </span>
         `;
     }
 
+
     try {
 
-        const response = await fetch(
-            window.PRIMARY_URL +
-            '?t=' +
-            Date.now(),
-            {
-                cache: 'no-store'
-            }
-        );
+        const response =
+            await fetch(
+                window.PRIMARY_URL +
+                '?t=' +
+                Date.now(),
+                {
+                    cache: 'no-store'
+                }
+            );
+
 
         if (!response.ok) {
+
             throw new Error(
                 `HTTP ${response.status}`
             );
+
         }
 
-        const data = await response.json();
+
+        const data =
+            await response.json();
+
 
         matchesData =
-            Array.isArray(data.matches)
+            Array.isArray(
+                data.matches
+            )
                 ? data.matches
                 : [];
+
 
         console.log(
             `✅ Loaded ${matchesData.length} matches`
         );
+
 
         setupCategories();
 
@@ -143,9 +648,14 @@ async function fetchLatestMatches() {
 
         updateStats();
 
+
         if (loader) {
-            loader.style.display = 'none';
+
+            loader.style.display =
+                'none';
+
         }
+
 
     } catch (error) {
 
@@ -154,57 +664,87 @@ async function fetchLatestMatches() {
             error
         );
 
+
         if (loader) {
 
             loader.innerHTML = `
                 <div class="loading-error">
-                    <div class="error-icon">⚠️</div>
-                    <strong>Unable to load matches</strong>
-                    <span>Please refresh and try again.</span>
+
+                    <div class="error-icon">
+                        ⚠️
+                    </div>
+
+                    <strong>
+                        Unable to load matches
+                    </strong>
+
+                    <span>
+                        Please refresh and try again.
+                    </span>
+
                     <button
                         class="error-retry"
                         onclick="fetchLatestMatches()">
+
                         Try Again
+
                     </button>
+
                 </div>
             `;
+
         }
+
     }
+
 }
 
 
 /* =========================================================
    CATEGORY SETUP
-   ========================================================= */
+========================================================= */
 
 function setupCategories() {
 
     const container =
         $('category-container');
 
+
     if (!container) return;
 
-    const categories = [
-        ...new Set(
-            matchesData
-                .map(match =>
-                    String(
-                        match.category || ''
-                    ).trim()
-                )
-                .filter(Boolean)
-        )
-    ].sort();
 
-    container.innerHTML = '';
+    const categories =
+        [
+            ...new Set(
+                matchesData
+                    .map(
+                        match =>
+                            String(
+                                match.category ||
+                                ''
+                            ).trim()
+                    )
+                    .filter(Boolean)
+            )
+        ].sort();
 
-    container.style.display = 'flex';
+
+    container.innerHTML =
+        '';
+
+    container.style.display =
+        'flex';
 
 
-    /* ALL */
+    /*
+        ALL
+    */
 
     const allButton =
-        document.createElement('button');
+        document.createElement(
+            'button'
+        );
+
 
     allButton.className =
         `cat-btn ${
@@ -213,58 +753,82 @@ function setupCategories() {
                 : ''
         }`;
 
+
     allButton.innerHTML =
         `<span>✦</span> ALL`;
 
+
     allButton.onclick = () => {
 
-        currentCategory = 'ALL';
+        currentCategory =
+            'ALL';
 
         setupCategories();
+
         renderMatches();
 
         scrollToMatches();
+
     };
 
-    container.appendChild(allButton);
+
+    container.appendChild(
+        allButton
+    );
 
 
-    /* Categories */
+    /*
+        Categories
+    */
 
-    categories.forEach(category => {
+    categories.forEach(
+        category => {
 
-        const button =
-            document.createElement('button');
+            const button =
+                document.createElement(
+                    'button'
+                );
 
-        button.className =
-            `cat-btn ${
-                category === currentCategory
-                    ? 'active'
-                    : ''
-            }`;
 
-        button.textContent =
-            category;
+            button.className =
+                `cat-btn ${
+                    category === currentCategory
+                        ? 'active'
+                        : ''
+                }`;
 
-        button.onclick = () => {
 
-            currentCategory =
+            button.textContent =
                 category;
 
-            setupCategories();
-            renderMatches();
 
-            scrollToMatches();
-        };
+            button.onclick = () => {
 
-        container.appendChild(button);
-    });
+                currentCategory =
+                    category;
+
+                setupCategories();
+
+                renderMatches();
+
+                scrollToMatches();
+
+            };
+
+
+            container.appendChild(
+                button
+            );
+
+        }
+    );
+
 }
 
 
 /* =========================================================
    FILTER
-   ========================================================= */
+========================================================= */
 
 function filterCategory(category) {
 
@@ -276,17 +840,19 @@ function filterCategory(category) {
     renderMatches();
 
     scrollToMatches();
+
 }
 
 
 /* =========================================================
    RENDER MATCHES
-   ========================================================= */
+========================================================= */
 
 function renderMatches() {
 
     const homeView =
         $('home-view');
+
 
     if (!homeView) return;
 
@@ -294,16 +860,19 @@ function renderMatches() {
     const oldGrid =
         $('matches-container');
 
+
     const grid =
         oldGrid ||
         homeView;
 
 
-    grid.innerHTML = '';
+    grid.innerHTML =
+        '';
 
 
     const today =
         new Date();
+
 
     today.setHours(
         0,
@@ -312,97 +881,159 @@ function renderMatches() {
         0
     );
 
+
     const todayTime =
         today.getTime();
 
 
     let filtered =
-        matchesData.filter(match => {
+        matchesData.filter(
+            match => {
+
+                if (
+                    currentCategory ===
+                    'ALL'
+                ) {
+
+                    return true;
+
+                }
+
+
+                return String(
+                    match.category ||
+                    ''
+                )
+                    .trim()
+                    .toLowerCase() ===
+                    String(
+                        currentCategory
+                    )
+                        .trim()
+                        .toLowerCase();
+
+            }
+        );
+
+
+    /*
+        SORT
+    */
+
+    filtered.sort(
+        (a, b) => {
+
+            const dateA =
+                getDatePart(
+                    a.startTime
+                );
+
+
+            const dateB =
+                getDatePart(
+                    b.startTime
+                );
+
+
+            const liveA =
+                String(
+                    a.status || ''
+                ).toUpperCase() ===
+                'LIVE';
+
+
+            const liveB =
+                String(
+                    b.status || ''
+                ).toUpperCase() ===
+                'LIVE';
+
+
+            /*
+                LIVE first
+            */
 
             if (
-                currentCategory === 'ALL'
+                liveA &&
+                !liveB
+            ) return -1;
+
+
+            if (
+                !liveA &&
+                liveB
+            ) return 1;
+
+
+            /*
+                TODAY first
+            */
+
+            const todayA =
+                dateA ===
+                todayTime;
+
+
+            const todayB =
+                dateB ===
+                todayTime;
+
+
+            if (
+                todayA &&
+                !todayB
+            ) return -1;
+
+
+            if (
+                !todayA &&
+                todayB
+            ) return 1;
+
+
+            /*
+                Date
+            */
+
+            if (
+                dateA !== dateB
             ) {
-                return true;
+
+                return (
+                    dateA -
+                    dateB
+                );
+
             }
 
-            return String(
-                match.category || ''
-            )
-            .trim()
-            .toLowerCase() ===
-                String(
-                    currentCategory
+
+            /*
+                Time
+            */
+
+            return (
+                parseCustomDate(
+                    a.startTime
+                ) -
+                parseCustomDate(
+                    b.startTime
                 )
-                .trim()
-                .toLowerCase();
-        });
+            );
 
-
-    /* =====================================================
-       SORT
-    ===================================================== */
-
-    filtered.sort((a, b) => {
-
-        const dateA =
-            getDatePart(a.startTime);
-
-        const dateB =
-            getDatePart(b.startTime);
-
-        const liveA =
-            String(a.status || '')
-                .toUpperCase() === 'LIVE';
-
-        const liveB =
-            String(b.status || '')
-                .toUpperCase() === 'LIVE';
-
-
-        /* LIVE first */
-
-        if (liveA && !liveB) return -1;
-
-        if (!liveA && liveB) return 1;
-
-
-        /* TODAY first */
-
-        const todayA =
-            dateA === todayTime;
-
-        const todayB =
-            dateB === todayTime;
-
-        if (todayA && !todayB) return -1;
-
-        if (!todayA && todayB) return 1;
-
-
-        /* Date */
-
-        if (dateA !== dateB) {
-            return dateA - dateB;
         }
+    );
 
 
-        /* Time */
-
-        return (
-            parseCustomDate(a.startTime) -
-            parseCustomDate(b.startTime)
-        );
-    });
-
-
-    /* =====================================================
-       EMPTY
-    ===================================================== */
+    /*
+        EMPTY
+    */
 
     if (!filtered.length) {
 
         grid.innerHTML = `
+
             <div class="empty-matches">
+
                 <div class="empty-matches-icon">
                     🏏
                 </div>
@@ -415,62 +1046,81 @@ function renderMatches() {
                     There are no matches in
                     this category right now.
                 </p>
+
             </div>
+
         `;
 
         return;
     }
 
 
-    /* =====================================================
-       CARDS
-    ===================================================== */
+    /*
+        CARDS
+    */
 
     filtered.forEach(
         (match, displayIndex) => {
 
             const index =
-                matchesData.indexOf(match);
+                matchesData.indexOf(
+                    match
+                );
+
 
             const status =
                 String(
-                    match.status || 'UPCOMING'
+                    match.status ||
+                    'UPCOMING'
                 ).toUpperCase();
+
 
             const isLive =
                 status === 'LIVE';
+
 
             const image =
                 match.image ||
                 match.image_cdn?.APP ||
                 '';
 
+
             const title =
                 match.title ||
                 'Live Match';
+
 
             const category =
                 match.category ||
                 'SPORTS';
 
+
             const tournament =
                 match.tournament ||
                 '';
+
 
             const startTime =
                 match.startTime ||
                 'TBD';
 
+
             const isToday =
-                getDatePart(startTime) ===
+                getDatePart(
+                    startTime
+                ) ===
                 todayTime;
 
 
             const card =
-                document.createElement('article');
+                document.createElement(
+                    'article'
+                );
+
 
             card.className =
                 'match-card';
+
 
             card.style.setProperty(
                 '--card-index',
@@ -480,40 +1130,53 @@ function renderMatches() {
 
             card.onclick = () => {
 
-                showDetails(index);
+                showDetails(
+                    index
+                );
+
             };
 
 
-            /* Image */
+            let imageHTML =
+                '';
 
-            let imageHTML = '';
 
             if (image) {
 
                 imageHTML = `
+
                     <img
                         class="card-img"
                         src="${escapeHTML(image)}"
                         alt="${escapeHTML(title)}"
                         loading="lazy"
-                        onerror="this.style.display='none';this.parentElement.classList.add('image-failed');"
+                        onerror="
+                            this.style.display='none';
+                            this.parentElement.classList.add('image-failed');
+                        "
                     >
+
                 `;
 
             } else {
 
                 imageHTML = `
+
                     <div class="card-img-placeholder">
                         <span>🏏</span>
                     </div>
+
                 `;
+
             }
 
 
             card.innerHTML = `
 
-                <div class="card-thumb-wrap"
-                     style="--card-image:url('${escapeHTML(image)}')">
+                <div
+                    class="card-thumb-wrap"
+                    style="--card-image:url('${escapeHTML(image)}')"
+                >
 
                     ${imageHTML}
 
@@ -573,12 +1236,15 @@ function renderMatches() {
                         isLive
                             ? `
                                 <div class="watch-overlay">
+
                                     <span class="watch-play">
                                         ▶
                                     </span>
+
                                     <span>
                                         WATCH LIVE
                                     </span>
+
                                 </div>
                               `
                             : ''
@@ -611,26 +1277,34 @@ function renderMatches() {
 
 
                     <div class="card-time">
+
                         <span>◷</span>
+
                         ${escapeHTML(startTime)}
+
                     </div>
 
                 </div>
+
             `;
 
 
-            grid.appendChild(card);
+            grid.appendChild(
+                card
+            );
+
         }
     );
 
 
     applySearch();
+
 }
 
 
 /* =========================================================
    SEARCH
-   ========================================================= */
+========================================================= */
 
 const searchInput =
     $('match-search');
@@ -642,6 +1316,7 @@ if (searchInput) {
         'input',
         applySearch
     );
+
 }
 
 
@@ -650,7 +1325,9 @@ function applySearch() {
     const input =
         $('match-search');
 
+
     if (!input) return;
+
 
     const query =
         input.value
@@ -662,28 +1339,34 @@ function applySearch() {
         .querySelectorAll(
             '#matches-container .match-card'
         )
-        .forEach(card => {
+        .forEach(
+            card => {
 
-            const text =
-                card.innerText
-                    .toLowerCase();
+                const text =
+                    card.innerText
+                        .toLowerCase();
 
-            card.style.display =
-                text.includes(query)
-                    ? ''
-                    : 'none';
-        });
+
+                card.style.display =
+                    text.includes(query)
+                        ? ''
+                        : 'none';
+
+            }
+        );
+
 }
 
 
 /* =========================================================
    SHOW DETAILS
-   ========================================================= */
+========================================================= */
 
 function showDetails(index) {
 
     const match =
         matchesData[index];
+
 
     if (!match) return;
 
@@ -691,23 +1374,28 @@ function showDetails(index) {
     const home =
         $('home-view');
 
+
     const detail =
         $('detail-view');
 
-    if (!home || !detail) return;
 
+    if (
+        !home ||
+        !detail
+    ) return;
 
-    /* URL */
 
     const url =
         new URL(
             window.location.href
         );
 
+
     url.searchParams.set(
         'match',
         index
     );
+
 
     window.history.pushState(
         {},
@@ -716,21 +1404,19 @@ function showDetails(index) {
     );
 
 
-    /* Views */
-
     home.style.display =
         'none';
+
 
     detail.style.display =
         'block';
 
 
-    /* Image */
-
     const image =
         match.image ||
         match.image_cdn?.APP ||
         '';
+
 
     if ($('detail-img')) {
 
@@ -740,79 +1426,99 @@ function showDetails(index) {
         $('detail-img').alt =
             match.title ||
             'Match Poster';
+
     }
 
 
-    /* Text */
+    if (
+        $('detail-tournament')
+    ) {
 
-    if ($('detail-tournament')) {
+        $('detail-tournament')
+            .textContent =
+                match.tournament ||
+                match.category ||
+                'LIVE SPORTS';
 
-        $('detail-tournament').textContent =
-            match.tournament ||
-            match.category ||
-            'LIVE SPORTS';
     }
 
 
-    if ($('detail-title')) {
+    if (
+        $('detail-title')
+    ) {
 
-        $('detail-title').textContent =
-            match.title ||
-            'Live Match';
+        $('detail-title')
+            .textContent =
+                match.title ||
+                'Live Match';
+
     }
 
 
-    if ($('detail-time')) {
+    if (
+        $('detail-time')
+    ) {
 
-        $('detail-time').textContent =
-            `Start Time: ${
-                match.startTime ||
-                'TBD'
-            }`;
+        $('detail-time')
+            .textContent =
+                `Start Time: ${
+                    match.startTime ||
+                    'TBD'
+                }`;
+
     }
 
 
-    if ($('detail-status')) {
+    if (
+        $('detail-status')
+    ) {
 
-        $('detail-status').textContent =
-            `Status: ${
-                match.status ||
-                'UPCOMING'
-            }`;
+        $('detail-status')
+            .textContent =
+                `Status: ${
+                    match.status ||
+                    'UPCOMING'
+                }`;
+
     }
 
-
-    /* Share */
 
     const shareButton =
         $('share-detail-btn');
 
+
     if (shareButton) {
 
-        shareButton.onclick = () =>
-            openShareModal(index);
+        shareButton.onclick =
+            () =>
+                openShareModal(
+                    index
+                );
+
     }
 
 
-    /* Streams */
-
-    renderDetailStreams(match);
+    renderDetailStreams(
+        match
+    );
 
 
     window.scrollTo({
         top: 0,
         behavior: 'smooth'
     });
+
 }
 
 
 /* =========================================================
    STREAM EXTRACTION
-   ========================================================= */
+========================================================= */
 
 function extractStreams(match) {
 
     const languages = {};
+
 
     const drmKey =
         match?.STREAMING_CDN?.drm?.clearkey ||
@@ -820,9 +1526,9 @@ function extractStreams(match) {
         "";
 
 
-    /* -----------------------------------------
-       AUTO STREAMS — OBJECT
-    ----------------------------------------- */
+    /*
+        AUTO STREAMS — OBJECT
+    */
 
     if (
         match.auto_streams &&
@@ -833,36 +1539,46 @@ function extractStreams(match) {
 
         Object.keys(
             match.auto_streams
-        ).forEach(language => {
+        ).forEach(
+            language => {
 
-            const streamData =
-                match.auto_streams[
-                    language
-                ];
+                const streamData =
+                    match.auto_streams[
+                        language
+                    ];
 
-            const streams =
-                streamData?.streams;
 
-            if (
-                streams &&
-                Object.keys(streams)
-                    .some(
-                        key =>
-                            /^\d+p$/i.test(key)
-                    )
-            ) {
+                const streams =
+                    streamData?.streams;
 
-                languages[
-                    language.toUpperCase()
-                ] = streams;
+
+                if (
+                    streams &&
+                    Object.keys(streams)
+                        .some(
+                            key =>
+                                /^\d+p$/i.test(
+                                    key
+                                )
+                        )
+                ) {
+
+                    languages[
+                        language.toUpperCase()
+                    ] =
+                        streams;
+
+                }
+
             }
-        });
+        );
+
     }
 
 
-    /* -----------------------------------------
-       AUTO STREAMS — ARRAY
-    ----------------------------------------- */
+    /*
+        AUTO STREAMS — ARRAY
+    */
 
     if (
         Array.isArray(
@@ -876,13 +1592,14 @@ function extractStreams(match) {
                 if (
                     item?.auto &&
                     typeof item.auto ===
-                        'string'
+                    'string'
                 ) {
 
                     const parsed =
                         parseM3u8Qualities(
                             item.auto
                         );
+
 
                     if (
                         Object.keys(
@@ -892,19 +1609,25 @@ function extractStreams(match) {
 
                         languages.DEFAULT =
                             parsed;
+
                     }
+
                 }
+
             }
         );
+
     }
 
 
-    /* -----------------------------------------
-       PRIMARY STREAM
-    ----------------------------------------- */
+    /*
+        PRIMARY STREAM
+    */
 
     if (
-        !Object.keys(languages).length &&
+        !Object.keys(
+            languages
+        ).length &&
         match.streams?.primary
     ) {
 
@@ -930,20 +1653,26 @@ function extractStreams(match) {
                 primary.src ||
                 '';
 
+
             if (primaryURL) {
 
                 languages.DEFAULT = {
                     '1080p':
                         primaryURL
                 };
+
             }
+
         }
+
     }
 
 
     console.log(
         '🌐 Languages:',
-        Object.keys(languages)
+        Object.keys(
+            languages
+        )
     );
 
 
@@ -951,12 +1680,13 @@ function extractStreams(match) {
         languages,
         drmKey
     };
+
 }
 
 
 /* =========================================================
    PARSE M3U8 QUALITIES
-   ========================================================= */
+========================================================= */
 
 function parseM3u8Qualities(
     playlist
@@ -966,11 +1696,14 @@ function parseM3u8Qualities(
         !playlist ||
         typeof playlist !== 'string'
     ) {
+
         return {};
+
     }
 
 
     const result = {};
+
 
     const lines =
         playlist.split('\n');
@@ -1006,19 +1739,23 @@ function parseM3u8Qualities(
                         'p'
                     ] =
                         nextLine;
+
                 }
+
             }
+
         }
     );
 
 
     return result;
+
 }
 
 
 /* =========================================================
    DETAIL STREAM UI
-   ========================================================= */
+========================================================= */
 
 function renderDetailStreams(
     match
@@ -1027,10 +1764,9 @@ function renderDetailStreams(
     const detail =
         $('detail-view');
 
+
     if (!detail) return;
 
-
-    /* Remove previous dynamic sections */
 
     detail
         .querySelectorAll(
@@ -1046,14 +1782,16 @@ function renderDetailStreams(
         languages,
         drmKey
     } =
-        extractStreams(match);
+        extractStreams(
+            match
+        );
 
 
     const languageKeys =
-        Object.keys(languages);
+        Object.keys(
+            languages
+        );
 
-
-    /* No streams */
 
     if (!languageKeys.length) {
 
@@ -1062,10 +1800,13 @@ function renderDetailStreams(
                 'div'
             );
 
+
         empty.className =
             'dynamic-stream-area stream-empty';
 
+
         empty.innerHTML = `
+
             <div>
                 🚫
             </div>
@@ -1078,17 +1819,21 @@ function renderDetailStreams(
                 No playable stream is available
                 for this match.
             </span>
+
         `;
 
-        detail.appendChild(empty);
+
+        detail.appendChild(
+            empty
+        );
 
         return;
+
     }
 
 
-    /* Language priority */
-
     const priority = [
+
         'HINDI',
         'ENGLISH',
         'PUNJABI',
@@ -1099,6 +1844,7 @@ function renderDetailStreams(
         'KANNADA',
         'BENGALI',
         'MARATHI'
+
     ];
 
 
@@ -1108,6 +1854,7 @@ function renderDetailStreams(
             const aIndex =
                 priority.indexOf(a);
 
+
             const bIndex =
                 priority.indexOf(b);
 
@@ -1116,33 +1863,46 @@ function renderDetailStreams(
                 aIndex !== -1 &&
                 bIndex !== -1
             ) {
-                return aIndex - bIndex;
+
+                return (
+                    aIndex -
+                    bIndex
+                );
+
             }
 
 
-            if (aIndex !== -1) {
+            if (
+                aIndex !== -1
+            ) {
+
                 return -1;
+
             }
 
 
-            if (bIndex !== -1) {
+            if (
+                bIndex !== -1
+            ) {
+
                 return 1;
+
             }
 
 
-            return a.localeCompare(b);
+            return a.localeCompare(
+                b
+            );
+
         }
     );
 
-
-    /* -----------------------------------------
-       STREAM AREA
-    ----------------------------------------- */
 
     const area =
         document.createElement(
             'div'
         );
+
 
     area.className =
         'dynamic-stream-area';
@@ -1151,18 +1911,27 @@ function renderDetailStreams(
     area.innerHTML = `
 
         <div class="language-title">
+
             <span>🌐</span>
+
             Select Language
+
         </div>
 
+
         <div class="language-tabs"></div>
+
 
         <div class="quality-section">
 
             <div class="quality-title">
+
                 <span>🎬</span>
+
                 Select Quality
+
             </div>
+
 
             <div
                 class="quality-grid"
@@ -1170,10 +1939,13 @@ function renderDetailStreams(
             </div>
 
         </div>
+
     `;
 
 
-    detail.appendChild(area);
+    detail.appendChild(
+        area
+    );
 
 
     const tabs =
@@ -1191,10 +1963,6 @@ function renderDetailStreams(
     let activeLanguage =
         languageKeys[0];
 
-
-    /* -----------------------------------------
-       LANGUAGE BUTTONS
-    ----------------------------------------- */
 
     languageKeys.forEach(
         language => {
@@ -1249,17 +2017,17 @@ function renderDetailStreams(
                     drmKey,
                     qualityGrid
                 );
+
             };
 
 
             tabs.appendChild(
                 button
             );
+
         }
     );
 
-
-    /* First language */
 
     renderQualities(
         languages[
@@ -1268,12 +2036,13 @@ function renderDetailStreams(
         drmKey,
         qualityGrid
     );
+
 }
 
 
 /* =========================================================
    RENDER QUALITIES
-   ========================================================= */
+========================================================= */
 
 function renderQualities(
     streams,
@@ -1284,26 +2053,34 @@ function renderQualities(
     if (!grid) return;
 
 
-    grid.innerHTML = '';
+    grid.innerHTML =
+        '';
 
 
     if (!streams) {
 
         grid.innerHTML = `
+
             <div class="stream-empty">
                 No streams available.
             </div>
+
         `;
 
         return;
+
     }
 
 
     const qualities =
-        Object.keys(streams)
+        Object.keys(
+            streams
+        )
             .filter(
                 key =>
-                    /^\d+p$/i.test(key)
+                    /^\d+p$/i.test(
+                        key
+                    )
             )
             .sort(
                 (a, b) =>
@@ -1315,12 +2092,15 @@ function renderQualities(
     if (!qualities.length) {
 
         grid.innerHTML = `
+
             <div class="stream-empty">
                 No playable quality found.
             </div>
+
         `;
 
         return;
+
     }
 
 
@@ -1338,6 +2118,7 @@ function renderQualities(
 
 
             button.innerHTML = `
+
                 <span class="quality-play">
                     ▶
                 </span>
@@ -1348,6 +2129,7 @@ function renderQualities(
                         quality.toUpperCase()
                     )}
                 </span>
+
             `;
 
 
@@ -1357,39 +2139,61 @@ function renderQualities(
                     streams[quality],
                     drmKey
                 );
+
             };
 
 
             grid.appendChild(
                 button
             );
+
         }
     );
+
 }
 
 
 /* =========================================================
    HOME
-   ========================================================= */
+========================================================= */
 
 function showHome() {
 
+    /*
+        If player is open while going home,
+        stop viewer presence.
+    */
+
+    if (
+        currentViewerRef
+    ) {
+
+        stopLivePresence();
+
+    }
+
+
     const home =
         $('home-view');
+
 
     const detail =
         $('detail-view');
 
 
     if (home) {
+
         home.style.display =
             'block';
+
     }
 
 
     if (detail) {
+
         detail.style.display =
             'none';
+
     }
 
 
@@ -1397,6 +2201,7 @@ function showHome() {
         new URL(
             window.location.href
         );
+
 
     url.searchParams.delete(
         'match'
@@ -1414,17 +2219,19 @@ function showHome() {
         top: 0,
         behavior: 'smooth'
     });
+
 }
 
 
 /* =========================================================
    SCROLL
-   ========================================================= */
+========================================================= */
 
 function scrollToMatches() {
 
     const section =
         $('live-matches');
+
 
     if (!section) return;
 
@@ -1433,12 +2240,13 @@ function scrollToMatches() {
         behavior: 'smooth',
         block: 'start'
     });
+
 }
 
 
 /* =========================================================
    STREAM FLOW
-   ========================================================= */
+========================================================= */
 
 function triggerStreamFlow(
     url,
@@ -1452,6 +2260,7 @@ function triggerStreamFlow(
         );
 
         return;
+
     }
 
 
@@ -1475,12 +2284,13 @@ function triggerStreamFlow(
 
     document.body.style.overflow =
         'hidden';
+
 }
 
 
 /* =========================================================
    CLOSE TELEGRAM
-   ========================================================= */
+========================================================= */
 
 function closeTelegramModal() {
 
@@ -1493,19 +2303,21 @@ function closeTelegramModal() {
         modal.classList.remove(
             'active'
         );
+
     }
 
 
     document.body.style.overflow =
         '';
+
 }
 
 
 /* =========================================================
    START STREAM
-   ========================================================= */
+========================================================= */
 
-function startSelectedStream() {
+async function startSelectedStream() {
 
     if (
         !pendingStreamData?.url
@@ -1516,13 +2328,13 @@ function startSelectedStream() {
         );
 
         return;
+
     }
 
 
-    const streamData =
-        {
-            ...pendingStreamData
-        };
+    const streamData = {
+        ...pendingStreamData
+    };
 
 
     closeTelegramModal();
@@ -1530,6 +2342,7 @@ function startSelectedStream() {
 
     const iframe =
         $('iframePlayer');
+
 
     const playerModal =
         $('player-modal');
@@ -1545,11 +2358,12 @@ function startSelectedStream() {
         );
 
         return;
+
     }
 
 
     /*
-       EXISTING PLAYER URL — DO NOT CHANGE
+        EXISTING PLAYER URL — DO NOT CHANGE
     */
 
     let playerURL =
@@ -1566,6 +2380,7 @@ function startSelectedStream() {
             encodeURIComponent(
                 streamData.key
             );
+
     }
 
 
@@ -1579,14 +2394,25 @@ function startSelectedStream() {
 
     document.body.style.overflow =
         'hidden';
+
+
+    /*
+        Start live viewer presence
+        only after the player opens.
+    */
+
+    showWatchingCounter();
+
+    startLivePresence();
+
 }
 
 
 /* =========================================================
    CLOSE PLAYER
-   ========================================================= */
+========================================================= */
 
-function closePlayer() {
+async function closePlayer() {
 
     const playerModal =
         $('player-modal');
@@ -1596,10 +2422,19 @@ function closePlayer() {
         $('iframePlayer');
 
 
+    /*
+        Stop Firebase viewer presence
+        BEFORE closing the player.
+    */
+
+    await stopLivePresence();
+
+
     if (playerModal) {
 
         playerModal.style.display =
             'none';
+
     }
 
 
@@ -1607,6 +2442,7 @@ function closePlayer() {
 
         iframe.src =
             '';
+
     }
 
 
@@ -1616,12 +2452,13 @@ function closePlayer() {
 
     pendingStreamData =
         null;
+
 }
 
 
 /* =========================================================
    SHARE MODAL
-   ========================================================= */
+========================================================= */
 
 function openShareModal(index) {
 
@@ -1680,7 +2517,9 @@ function openShareModal(index) {
             <button
                 class="share-close"
                 onclick="closeShareModal()">
+
                 ✕
+
             </button>
 
 
@@ -1715,6 +2554,7 @@ function openShareModal(index) {
                     ${escapeHTML(title)}
                 </h3>
 
+
                 ${
                     tournament
                         ? `
@@ -1738,6 +2578,7 @@ function openShareModal(index) {
                     value="${escapeHTML(shareURL)}"
                     readonly
                 >
+
 
                 <button
                     class="copy-btn"
@@ -1830,6 +2671,7 @@ function openShareModal(index) {
             </button>
 
         </div>
+
     `;
 
 
@@ -1838,12 +2680,15 @@ function openShareModal(index) {
     );
 
 
-    requestAnimationFrame(() => {
+    requestAnimationFrame(
+        () => {
 
-        modal.classList.add(
-            'active'
-        );
-    });
+            modal.classList.add(
+                'active'
+            );
+
+        }
+    );
 
 
     modal.addEventListener(
@@ -1856,15 +2701,18 @@ function openShareModal(index) {
             ) {
 
                 closeShareModal();
+
             }
+
         }
     );
+
 }
 
 
 /* =========================================================
    CLOSE SHARE
-   ========================================================= */
+========================================================= */
 
 function closeShareModal() {
 
@@ -1884,18 +2732,21 @@ function closeShareModal() {
         () => {
 
             if (modal) {
+
                 modal.remove();
+
             }
 
         },
         250
     );
+
 }
 
 
 /* =========================================================
    COPY SHARE URL
-   ========================================================= */
+========================================================= */
 
 function copyShareUrl() {
 
@@ -1915,30 +2766,39 @@ function copyShareUrl() {
             .writeText(
                 input.value
             )
-            .then(() => {
+            .then(
+                () => {
 
-                showToast(
-                    '✓ Link copied!'
-                );
+                    showToast(
+                        '✓ Link copied!'
+                    );
 
-            })
-            .catch(() => {
+                }
+            )
+            .catch(
+                () => {
 
-                fallbackCopy(
-                    input
-                );
-            });
+                    fallbackCopy(
+                        input
+                    );
+
+                }
+            );
 
     } else {
 
         fallbackCopy(
             input
         );
+
     }
+
 }
 
 
-function fallbackCopy(input) {
+function fallbackCopy(
+    input
+) {
 
     input.select();
 
@@ -1954,22 +2814,26 @@ function fallbackCopy(input) {
             'copy'
         );
 
+
         showToast(
             '✓ Link copied!'
         );
+
 
     } catch {
 
         alert(
             'Copy the link manually.'
         );
+
     }
+
 }
 
 
 /* =========================================================
    NATIVE SHARE
-   ========================================================= */
+========================================================= */
 
 function nativeShare(
     url,
@@ -1981,23 +2845,31 @@ function nativeShare(
     ) {
 
         navigator.share({
+
             title,
+
             text:
                 'Check out this live match!',
+
             url
-        })
-        .catch(() => {});
+
+        }).catch(
+            () => {}
+        );
+
 
     } else {
 
         copyShareUrl();
+
     }
+
 }
 
 
 /* =========================================================
    TOAST
-   ========================================================= */
+========================================================= */
 
 function showToast(
     message
@@ -2010,7 +2882,9 @@ function showToast(
 
 
     if (oldToast) {
+
         oldToast.remove();
+
     }
 
 
@@ -2033,35 +2907,45 @@ function showToast(
     );
 
 
-    setTimeout(() => {
+    setTimeout(
+        () => {
 
-        toast.classList.add(
-            'show'
-        );
+            toast.classList.add(
+                'show'
+            );
 
-    }, 20);
-
-
-    setTimeout(() => {
-
-        toast.classList.remove(
-            'show'
-        );
+        },
+        20
+    );
 
 
-        setTimeout(() => {
+    setTimeout(
+        () => {
 
-            toast.remove();
+            toast.classList.remove(
+                'show'
+            );
 
-        }, 300);
 
-    }, 2200);
+            setTimeout(
+                () => {
+
+                    toast.remove();
+
+                },
+                300
+            );
+
+        },
+        2200
+    );
+
 }
 
 
 /* =========================================================
    REFRESH
-   ========================================================= */
+========================================================= */
 
 function refreshMatches() {
 
@@ -2074,32 +2958,38 @@ function refreshMatches() {
         button.classList.add(
             'rotating'
         );
+
     }
 
 
     fetchLatestMatches()
-        .finally(() => {
+        .finally(
+            () => {
 
-            if (button) {
+                if (button) {
 
-                setTimeout(
-                    () => {
+                    setTimeout(
+                        () => {
 
-                        button.classList.remove(
-                            'rotating'
-                        );
+                            button.classList.remove(
+                                'rotating'
+                            );
 
-                    },
-                    500
-                );
+                        },
+                        500
+                    );
+
+                }
+
             }
-        });
+        );
+
 }
 
 
 /* =========================================================
    STATS
-   ========================================================= */
+========================================================= */
 
 function updateStats() {
 
@@ -2133,29 +3023,36 @@ function updateStats() {
 
     if ($('totalCount')) {
 
-        $('totalCount').textContent =
-            total;
+        $('totalCount')
+            .textContent =
+                total;
+
     }
 
 
     if ($('liveCount')) {
 
-        $('liveCount').textContent =
-            live;
+        $('liveCount')
+            .textContent =
+                live;
+
     }
 
 
     if ($('sportCount')) {
 
-        $('sportCount').textContent =
-            sports;
+        $('sportCount')
+            .textContent =
+                sports;
+
     }
+
 }
 
 
 /* =========================================================
    MODAL BACKDROP
-   ========================================================= */
+========================================================= */
 
 document.addEventListener(
     'click',
@@ -2168,18 +3065,20 @@ document.addEventListener(
         if (
             telegram &&
             event.target ===
-                telegram
+            telegram
         ) {
 
             closeTelegramModal();
+
         }
+
     }
 );
 
 
 /* =========================================================
    ESC KEY
-   ========================================================= */
+========================================================= */
 
 document.addEventListener(
     'keydown',
@@ -2193,14 +3092,16 @@ document.addEventListener(
             closeTelegramModal();
 
             closeShareModal();
+
         }
+
     }
 );
 
 
 /* =========================================================
    BROWSER BACK / FORWARD
-   ========================================================= */
+========================================================= */
 
 window.addEventListener(
     'popstate',
@@ -2230,74 +3131,109 @@ window.addEventListener(
                 Number(index)
             );
 
+
         } else {
 
             const home =
                 $('home-view');
+
 
             const detail =
                 $('detail-view');
 
 
             if (home) {
+
                 home.style.display =
                     'block';
+
             }
 
 
             if (detail) {
+
                 detail.style.display =
                     'none';
+
             }
+
         }
+
+    }
+);
+
+
+/* =========================================================
+   PAGE CLOSE / TAB CLOSE
+========================================================= */
+
+window.addEventListener(
+    'beforeunload',
+    () => {
+
+        /*
+            Firebase onDisconnect handles
+            the final cleanup server-side.
+
+            We also hide the UI immediately.
+        */
+
+        hideWatchingCounter();
+
     }
 );
 
 
 /* =========================================================
    INITIAL LOAD
-   ========================================================= */
+========================================================= */
 
 fetchLatestMatches()
-    .then(() => {
+    .then(
+        () => {
 
-        const params =
-            new URLSearchParams(
-                window.location.search
-            );
-
-
-        const matchIndex =
-            params.get('match');
+            const params =
+                new URLSearchParams(
+                    window.location.search
+                );
 
 
-        if (
-            matchIndex !== null &&
-            !Number.isNaN(
-                Number(matchIndex)
-            ) &&
-            matchesData[
-                Number(matchIndex)
-            ]
-        ) {
+            const matchIndex =
+                params.get('match');
 
-            setTimeout(
-                () => {
 
-                    showDetails(
-                        Number(matchIndex)
-                    );
+            if (
+                matchIndex !== null &&
+                !Number.isNaN(
+                    Number(matchIndex)
+                ) &&
+                matchesData[
+                    Number(matchIndex)
+                ]
+            ) {
 
-                },
-                300
-            );
+                setTimeout(
+                    () => {
+
+                        showDetails(
+                            Number(
+                                matchIndex
+                            )
+                        );
+
+                    },
+                    300
+                );
+
+            }
+
         }
-    });
+    );
 
 
 /* =========================================================
    AUTO REFRESH
-   ========================================================= */
+========================================================= */
 
 setInterval(
     fetchLatestMatches,
@@ -2307,7 +3243,7 @@ setInterval(
 
 /* =========================================================
    GLOBAL FUNCTIONS
-   ========================================================= */
+========================================================= */
 
 window.fetchLatestMatches =
     fetchLatestMatches;
@@ -2356,6 +3292,18 @@ window.nativeShare =
 
 window.refreshMatches =
     refreshMatches;
+
+
+/* Firebase functions */
+
+window.initializeFirebase =
+    initializeFirebase;
+
+window.startLivePresence =
+    startLivePresence;
+
+window.stopLivePresence =
+    stopLivePresence;
 
 
 console.log(
