@@ -13,9 +13,16 @@
     <meta name="theme-color"
           content="#050505">
 
+    <meta name="description"
+          content="CRICZONE LIVE — Live sports, matches and updates.">
+
     <title>CRICZONE LIVE — Live Sports</title>
 
-    <!-- Existing dependencies -->
+
+    <!-- =========================================
+         DEPENDENCIES
+    ========================================== -->
+
     <script src="https://cdn.tailwindcss.com"></script>
 
     <link rel="preconnect"
@@ -35,20 +42,27 @@
     <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.compiled.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
+
 </head>
 
 
 <body>
+
 
     <!-- =========================================
          BACKGROUND
     ========================================== -->
 
     <div class="site-bg">
+
         <div class="bg-orb bg-orb-one"></div>
+
         <div class="bg-orb bg-orb-two"></div>
+
         <div class="bg-grid"></div>
+
     </div>
+
 
 
     <!-- =========================================
@@ -94,8 +108,11 @@
             <div class="nav-right">
 
                 <div class="nav-live">
+
                     <span class="live-dot"></span>
+
                     LIVE TV
+
                 </div>
 
                 <button class="nav-menu"
@@ -156,14 +173,22 @@
                 <div class="hero-content">
 
                     <div class="hero-eyebrow">
+
                         <span class="hero-live-dot"></span>
+
                         LIVE SPORTS STREAMING
+
                     </div>
 
 
                     <h1>
+
                         YOUR WORLD OF
-                        <span>LIVE SPORTS.</span>
+
+                        <span>
+                            LIVE SPORTS.
+                        </span>
+
                     </h1>
 
 
@@ -179,6 +204,7 @@
                                 onclick="scrollToMatches()">
 
                             <span>▶</span>
+
                             Watch Live
 
                         </button>
@@ -188,6 +214,7 @@
                                 onclick="scrollToMatches()">
 
                             Explore Matches
+
                             <span>→</span>
 
                         </button>
@@ -197,12 +224,15 @@
                 </div>
 
 
-                <!-- Hero visual -->
+
+                <!-- HERO VISUAL -->
 
                 <div class="hero-visual">
 
                     <div class="hero-ring hero-ring-one"></div>
+
                     <div class="hero-ring hero-ring-two"></div>
+
 
                     <div class="hero-ball">
 
@@ -218,8 +248,15 @@
                         <span class="mini-live"></span>
 
                         <div>
-                            <strong>LIVE</strong>
-                            <small>Streaming Now</small>
+
+                            <strong>
+                                LIVE
+                            </strong>
+
+                            <small>
+                                Streaming Now
+                            </small>
+
                         </div>
 
                     </div>
@@ -230,8 +267,15 @@
                         <span>🏏</span>
 
                         <div>
-                            <strong>CRICKET</strong>
-                            <small>Live Matches</small>
+
+                            <strong>
+                                CRICKET
+                            </strong>
+
+                            <small>
+                                Live Matches
+                            </small>
+
                         </div>
 
                     </div>
@@ -248,6 +292,7 @@
 
             <section class="quick-stats">
 
+
                 <div class="stat-card">
 
                     <div class="stat-icon">
@@ -255,11 +300,19 @@
                     </div>
 
                     <div>
-                        <span>LIVE NOW</span>
-                        <strong id="liveCount">--</strong>
+
+                        <span>
+                            LIVE NOW
+                        </span>
+
+                        <strong id="liveCount">
+                            --
+                        </strong>
+
                     </div>
 
                 </div>
+
 
 
                 <div class="stat-card">
@@ -269,11 +322,19 @@
                     </div>
 
                     <div>
-                        <span>MATCHES</span>
-                        <strong id="totalCount">--</strong>
+
+                        <span>
+                            MATCHES
+                        </span>
+
+                        <strong id="totalCount">
+                            --
+                        </strong>
+
                     </div>
 
                 </div>
+
 
 
                 <div class="stat-card">
@@ -283,11 +344,19 @@
                     </div>
 
                     <div>
-                        <span>SPORTS</span>
-                        <strong id="sportCount">--</strong>
+
+                        <span>
+                            SPORTS
+                        </span>
+
+                        <strong id="sportCount">
+                            --
+                        </strong>
+
                     </div>
 
                 </div>
+
 
 
                 <div class="stat-card">
@@ -297,11 +366,19 @@
                     </div>
 
                     <div>
-                        <span>UPDATED</span>
-                        <strong>LIVE</strong>
+
+                        <span>
+                            UPDATED
+                        </span>
+
+                        <strong>
+                            LIVE
+                        </strong>
+
                     </div>
 
                 </div>
+
 
             </section>
 
@@ -316,6 +393,7 @@
                 <div class="section-heading">
 
                     <div>
+
                         <span class="section-kicker">
                             DISCOVER
                         </span>
@@ -323,6 +401,7 @@
                         <h2>
                             Pick your world
                         </h2>
+
                     </div>
 
                     <div class="section-line"></div>
@@ -391,8 +470,6 @@
                 </div>
 
 
-                <!-- Match cards are inserted by script.js -->
-
                 <div id="matches-container"
                      class="matches-grid">
                 </div>
@@ -417,13 +494,20 @@
                     </span>
 
                     <h2>
+
                         Stay connected with
-                        <span>CRICZONE</span>
+
+                        <span>
+                            CRICZONE
+                        </span>
+
                     </h2>
 
                     <p>
+
                         Get live updates, match alerts and
                         stream information on Telegram.
+
                     </p>
 
 
@@ -433,6 +517,7 @@
                        class="telegram-cta">
 
                         <span>✈</span>
+
                         Join Telegram
 
                     </a>
@@ -454,13 +539,17 @@
                  class="detail-view"
                  style="display:none;">
 
+
             <div class="detail-topbar">
 
                 <button class="back-btn"
                         onclick="showHome()">
 
                     ←
-                    <span>Back to Matches</span>
+
+                    <span>
+                        Back to Matches
+                    </span>
 
                 </button>
 
@@ -507,6 +596,7 @@
             </div>
 
 
+
             <div class="detail-layout">
 
 
@@ -528,6 +618,7 @@
                     </div>
 
                 </div>
+
 
 
                 <div class="detail-info">
@@ -601,7 +692,9 @@
 
             <button class="modal-close"
                     onclick="closeTelegramModal()">
+
                 ✕
+
             </button>
 
 
@@ -616,8 +709,10 @@
 
 
             <p class="tg-subtitle">
+
                 Get live updates and stream information
                 through our Telegram channel.
+
             </p>
 
 
@@ -650,13 +745,68 @@
 
     <div id="player-modal">
 
-        <button class="close-player-btn"
-                onclick="closePlayer()">
 
-            ✕ Close Player
+        <!-- =====================================
+             LIVE WATCHING COUNTER
+        ====================================== -->
 
-        </button>
+        <div id="live-watching"
+             class="live-watching"
+             aria-live="polite"
+             aria-label="Live viewers">
 
+            <span class="watching-dot"></span>
+
+            <span class="watching-text">
+
+                <b id="watching-count">
+                    400
+                </b>
+
+                <span>
+                    Watching
+                </span>
+
+            </span>
+
+        </div>
+
+
+
+        <!-- PLAYER HEADER -->
+
+        <div class="player-topbar">
+
+            <div class="player-live-status">
+
+                <span class="player-live-dot"></span>
+
+                <strong>
+                    LIVE
+                </strong>
+
+                <span class="player-live-divider"></span>
+
+                <span>
+                    CRICZONE LIVE
+                </span>
+
+            </div>
+
+
+            <button class="close-player-btn"
+                    onclick="closePlayer()">
+
+                ✕
+                <span>Close Player</span>
+
+            </button>
+
+        </div>
+
+
+
+        <!-- PLAYER -->
 
         <div class="iframe-container">
 
@@ -670,6 +820,7 @@
             </iframe>
 
         </div>
+
 
     </div>
 
@@ -693,8 +844,13 @@
                     </div>
 
                     <div class="brand-name">
+
                         CRICZONE
-                        <small>LIVE</small>
+
+                        <small>
+                            LIVE
+                        </small>
+
                     </div>
 
                 </div>
@@ -708,6 +864,7 @@
             </div>
 
 
+
             <div class="footer-links">
 
                 <a href="https://t.me/Rohit_TV"
@@ -718,9 +875,11 @@
 
                 </a>
 
+
                 <button onclick="showHome()">
                     Home
                 </button>
+
 
                 <button onclick="scrollToMatches()">
                     Live Matches
@@ -748,10 +907,29 @@
 
 
     <!-- =========================================
-         SCRIPT
+         FIREBASE
+         LIVE VIEWER PRESENCE
+    ========================================== -->
+
+    <!--
+        Firebase configuration will be connected
+        in script.js.
+
+        Viewer system:
+        BASELINE + REAL ACTIVE VIEWERS
+
+        Example:
+        400 baseline + 7 real viewers = 407
+    -->
+
+
+
+    <!-- =========================================
+         MAIN SCRIPT
     ========================================== -->
 
     <script src="script.js"></script>
+
 
 </body>
 
