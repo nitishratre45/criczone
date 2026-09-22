@@ -4534,3 +4534,775 @@ img {
         display: none;
     }
 }
+/* ============================================================
+   CRICZONE PLAYER — FINAL MASTER FIX
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   PLAYER MODAL
+   ------------------------------------------------------------ */
+
+#player-modal {
+    position: fixed !important;
+    inset: 0 !important;
+
+    z-index: 99999 !important;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 72px 18px 18px !important;
+
+    background:
+        rgba(0, 0, 0, 0.96) !important;
+
+    overflow: hidden !important;
+
+    isolation: isolate;
+}
+
+
+/* ------------------------------------------------------------
+   PLAYER TOPBAR
+   ------------------------------------------------------------ */
+
+#player-modal .player-topbar {
+    position: absolute !important;
+
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+
+    width: 100% !important;
+    height: 58px !important;
+
+    z-index: 1000 !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    justify-content: space-between !important;
+
+    padding: 0 18px !important;
+
+    border-bottom:
+        1px solid rgba(255,255,255,.08) !important;
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(8,8,10,.98),
+            rgba(8,8,10,.92)
+        ) !important;
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+
+/* ------------------------------------------------------------
+   LIVE STATUS — LEFT
+   ------------------------------------------------------------ */
+
+#player-modal .player-live-status {
+    position: relative !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    gap: 8px !important;
+
+    min-width: 0 !important;
+
+    flex: 1 1 0 !important;
+
+    color:
+        rgba(255,255,255,.72) !important;
+
+    font-size: 10px !important;
+
+    font-weight: 700 !important;
+
+    white-space: nowrap !important;
+
+    overflow: hidden !important;
+}
+
+#player-modal .player-live-status strong {
+    color: #ff3158 !important;
+
+    font-size: 9px !important;
+
+    font-weight: 900 !important;
+
+    letter-spacing: 1px !important;
+}
+
+#player-modal .player-live-dot {
+    width: 7px !important;
+    height: 7px !important;
+
+    flex: 0 0 7px !important;
+
+    border-radius: 50% !important;
+
+    background: #ff3158 !important;
+
+    box-shadow:
+        0 0 10px rgba(255,49,88,.85) !important;
+
+    animation:
+        globalLivePulse 1.4s infinite !important;
+}
+
+#player-modal .player-live-divider {
+    width: 1px !important;
+    height: 14px !important;
+
+    flex: 0 0 1px !important;
+
+    background:
+        rgba(255,255,255,.16) !important;
+}
+
+
+/* ------------------------------------------------------------
+   WATCHING COUNTER
+   IMPORTANT:
+   NEVER CENTER IT INSIDE VIDEO
+   ------------------------------------------------------------ */
+
+#player-modal #live-watching {
+    position: absolute !important;
+
+    /* topbar ke andar visually */
+    top: 11px !important;
+
+    left: 50% !important;
+
+    right: auto !important;
+    bottom: auto !important;
+
+    transform:
+        translateX(-50%) !important;
+
+    z-index: 1100 !important;
+
+    display: none;
+
+    align-items: center !important;
+
+    justify-content: center !important;
+
+    gap: 7px !important;
+
+    min-height: 34px !important;
+
+    padding:
+        7px 12px !important;
+
+    border:
+        1px solid rgba(255,255,255,.12) !important;
+
+    border-radius: 999px !important;
+
+    background:
+        rgba(7,9,10,.94) !important;
+
+    box-shadow:
+        0 6px 22px rgba(0,0,0,.38) !important;
+
+    backdrop-filter:
+        blur(14px) !important;
+
+    -webkit-backdrop-filter:
+        blur(14px) !important;
+
+    pointer-events: none !important;
+
+    user-select: none !important;
+
+    white-space: nowrap !important;
+
+    width: max-content !important;
+
+    max-width: calc(100vw - 180px) !important;
+}
+
+#player-modal #live-watching.active {
+    display: flex !important;
+}
+
+
+/* GREEN DOT */
+
+#player-modal .watching-dot {
+    width: 7px !important;
+    height: 7px !important;
+
+    flex: 0 0 7px !important;
+
+    border-radius: 50% !important;
+
+    background: #20e889 !important;
+
+    box-shadow:
+        0 0 0 3px rgba(32,232,137,.10),
+        0 0 12px rgba(32,232,137,.72) !important;
+
+    animation:
+        watchingPulse 1.4s ease-in-out infinite !important;
+}
+
+
+/* TEXT */
+
+#player-modal .watching-text {
+    display: flex !important;
+
+    align-items: center !important;
+
+    gap: 5px !important;
+
+    white-space: nowrap !important;
+}
+
+#player-modal #watching-count {
+    color: #20e889 !important;
+
+    font-size: 11px !important;
+
+    line-height: 1 !important;
+
+    font-weight: 900 !important;
+}
+
+#player-modal .watching-text > span {
+    display: inline !important;
+
+    color:
+        rgba(255,255,255,.72) !important;
+
+    font-size: 9px !important;
+
+    line-height: 1 !important;
+
+    font-weight: 700 !important;
+
+    white-space: nowrap !important;
+}
+
+
+/* ------------------------------------------------------------
+   CLOSE BUTTON — RIGHT
+   ------------------------------------------------------------ */
+
+#player-modal .close-player-btn {
+    position: relative !important;
+
+    top: auto !important;
+    right: auto !important;
+
+    z-index: 1100 !important;
+
+    flex: 0 0 auto !important;
+
+    min-height: 35px !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    justify-content: center !important;
+
+    gap: 6px !important;
+
+    padding:
+        0 12px !important;
+
+    border:
+        1px solid rgba(255,255,255,.10) !important;
+
+    border-radius: 8px !important;
+
+    color:
+        rgba(255,255,255,.78) !important;
+
+    background:
+        rgba(255,255,255,.045) !important;
+
+    font-size: 9px !important;
+
+    font-weight: 800 !important;
+
+    cursor: pointer !important;
+
+    white-space: nowrap !important;
+
+    transition:
+        background .2s ease,
+        border-color .2s ease,
+        color .2s ease !important;
+}
+
+#player-modal .close-player-btn:hover {
+    color: #fff !important;
+
+    border-color:
+        rgba(255,49,88,.40) !important;
+
+    background:
+        rgba(255,49,88,.12) !important;
+}
+
+
+/* ------------------------------------------------------------
+   IFRAME CONTAINER
+   ------------------------------------------------------------ */
+
+#player-modal .iframe-container {
+    position: relative !important;
+
+    width:
+        min(1280px, 100%) !important;
+
+    aspect-ratio:
+        16 / 9 !important;
+
+    height: auto !important;
+
+    max-height:
+        calc(100vh - 95px) !important;
+
+    min-height: 0 !important;
+
+    overflow: hidden !important;
+
+    border:
+        1px solid rgba(255,255,255,.09) !important;
+
+    border-radius: 14px !important;
+
+    background: #000 !important;
+
+    box-shadow:
+        0 25px 90px rgba(0,0,0,.70) !important;
+}
+
+
+/* IFRAME */
+
+#player-modal #iframePlayer {
+    width: 100% !important;
+
+    height: 100% !important;
+
+    display: block !important;
+
+    border: 0 !important;
+
+    background: #000 !important;
+}
+
+
+/* ------------------------------------------------------------
+   DESKTOP LARGE
+   ------------------------------------------------------------ */
+
+@media (min-width: 1200px) {
+
+    #player-modal {
+        padding:
+            72px 28px 20px !important;
+    }
+
+    #player-modal .iframe-container {
+        width:
+            min(1280px, calc(100vw - 56px)) !important;
+
+        max-height:
+            calc(100vh - 94px) !important;
+    }
+
+}
+
+
+/* ------------------------------------------------------------
+   TABLET
+   ------------------------------------------------------------ */
+
+@media (max-width: 900px) {
+
+    #player-modal {
+        padding:
+            63px 10px 10px !important;
+    }
+
+    #player-modal .player-topbar {
+        height: 53px !important;
+
+        padding:
+            0 10px !important;
+    }
+
+    #player-modal .iframe-container {
+        width: 100% !important;
+
+        max-height:
+            calc(100vh - 73px) !important;
+
+        border-radius: 9px !important;
+    }
+
+    #player-modal #live-watching {
+        top: 10px !important;
+
+        min-height: 32px !important;
+
+        padding:
+            6px 10px !important;
+
+        gap: 6px !important;
+    }
+
+    #player-modal #watching-count {
+        font-size: 10px !important;
+    }
+
+    #player-modal .watching-text > span {
+        font-size: 8px !important;
+    }
+
+    #player-modal .watching-dot {
+        width: 6px !important;
+        height: 6px !important;
+
+        flex-basis: 6px !important;
+    }
+
+}
+
+
+/* ------------------------------------------------------------
+   PORTRAIT PHONE
+   ------------------------------------------------------------ */
+
+@media (max-width: 600px)
+       and (orientation: portrait) {
+
+    #player-modal {
+        padding:
+            58px 5px 5px !important;
+
+        align-items: center !important;
+    }
+
+    #player-modal .player-topbar {
+        height: 50px !important;
+
+        padding:
+            0 7px !important;
+    }
+
+    #player-modal .player-live-status {
+        gap: 5px !important;
+
+        font-size: 7px !important;
+
+        max-width: 34% !important;
+    }
+
+    #player-modal .player-live-status strong {
+        font-size: 7px !important;
+    }
+
+    #player-modal .player-live-status > span:last-child {
+        max-width: 75px !important;
+
+        overflow: hidden !important;
+
+        text-overflow: ellipsis !important;
+
+        white-space: nowrap !important;
+    }
+
+    #player-modal .player-live-divider {
+        height: 10px !important;
+    }
+
+
+    /* WATCHING */
+
+    #player-modal #live-watching {
+        top: 9px !important;
+
+        min-height: 29px !important;
+
+        padding:
+            5px 8px !important;
+
+        gap: 5px !important;
+
+        max-width:
+            120px !important;
+    }
+
+    #player-modal #watching-count {
+        font-size: 9px !important;
+    }
+
+    #player-modal .watching-text {
+        gap: 3px !important;
+    }
+
+    #player-modal .watching-text > span {
+        font-size: 7px !important;
+    }
+
+    #player-modal .watching-dot {
+        width: 6px !important;
+        height: 6px !important;
+
+        flex-basis: 6px !important;
+    }
+
+
+    /* CLOSE */
+
+    #player-modal .close-player-btn {
+        min-height: 29px !important;
+
+        width: 30px !important;
+
+        padding: 0 !important;
+
+        font-size: 13px !important;
+    }
+
+    #player-modal .close-player-btn span {
+        display: none !important;
+    }
+
+
+    /* VIDEO */
+
+    #player-modal .iframe-container {
+        width: 100% !important;
+
+        aspect-ratio:
+            16 / 9 !important;
+
+        max-height:
+            calc(100vh - 63px) !important;
+
+        border-radius: 7px !important;
+    }
+
+}
+
+
+/* ------------------------------------------------------------
+   LANDSCAPE PHONE
+   THIS IS THE IMPORTANT ROTATE FIX
+   ------------------------------------------------------------ */
+
+@media (max-width: 900px)
+       and (orientation: landscape) {
+
+    #player-modal {
+        padding:
+            48px 5px 5px !important;
+
+        align-items: center !important;
+    }
+
+
+    #player-modal .player-topbar {
+        height: 42px !important;
+
+        padding:
+            0 7px !important;
+    }
+
+
+    /* LEFT */
+
+    #player-modal .player-live-status {
+        gap: 4px !important;
+
+        font-size: 6px !important;
+
+        max-width: 30% !important;
+    }
+
+    #player-modal .player-live-status strong {
+        font-size: 6px !important;
+    }
+
+    #player-modal .player-live-dot {
+        width: 5px !important;
+        height: 5px !important;
+
+        flex-basis: 5px !important;
+    }
+
+    #player-modal .player-live-divider {
+        height: 8px !important;
+    }
+
+    #player-modal .player-live-status > span:last-child {
+        max-width: 65px !important;
+
+        overflow: hidden !important;
+
+        text-overflow: ellipsis !important;
+    }
+
+
+    /* WATCHING — SMALL IN LANDSCAPE */
+
+    #player-modal #live-watching {
+        top: 7px !important;
+
+        min-height: 24px !important;
+
+        padding:
+            4px 7px !important;
+
+        gap: 4px !important;
+
+        max-width: 100px !important;
+
+        border-radius: 999px !important;
+    }
+
+    #player-modal .watching-dot {
+        width: 5px !important;
+        height: 5px !important;
+
+        flex-basis: 5px !important;
+
+        box-shadow:
+            0 0 0 2px rgba(32,232,137,.10),
+            0 0 8px rgba(32,232,137,.70) !important;
+    }
+
+    #player-modal #watching-count {
+        font-size: 7px !important;
+    }
+
+    #player-modal .watching-text {
+        gap: 3px !important;
+    }
+
+    #player-modal .watching-text > span {
+        font-size: 6px !important;
+    }
+
+
+    /* CLOSE */
+
+    #player-modal .close-player-btn {
+        width: 28px !important;
+
+        min-height: 27px !important;
+
+        padding: 0 !important;
+
+        font-size: 12px !important;
+
+        border-radius: 7px !important;
+    }
+
+    #player-modal .close-player-btn span {
+        display: none !important;
+    }
+
+
+    /* VIDEO */
+
+    #player-modal .iframe-container {
+        width: 100% !important;
+
+        height:
+            calc(100vh - 52px) !important;
+
+        max-height:
+            calc(100vh - 52px) !important;
+
+        aspect-ratio: auto !important;
+
+        border-radius: 6px !important;
+    }
+
+}
+
+
+/* ------------------------------------------------------------
+   VERY SMALL LANDSCAPE PHONES
+   ------------------------------------------------------------ */
+
+@media (max-width: 600px)
+       and (orientation: landscape)
+       and (max-height: 450px) {
+
+    #player-modal #live-watching {
+        top: 6px !important;
+
+        min-height: 22px !important;
+
+        padding:
+            3px 6px !important;
+    }
+
+    #player-modal #watching-count {
+        font-size: 6px !important;
+    }
+
+    #player-modal .watching-text > span {
+        font-size: 5px !important;
+    }
+
+    #player-modal .watching-dot {
+        width: 4px !important;
+        height: 4px !important;
+
+        flex-basis: 4px !important;
+    }
+
+    #player-modal .player-topbar {
+        height: 38px !important;
+    }
+
+    #player-modal {
+        padding-top: 43px !important;
+    }
+
+}
+
+
+/* ------------------------------------------------------------
+   PREVENT HORIZONTAL OVERFLOW
+   ------------------------------------------------------------ */
+
+#player-modal,
+#player-modal * {
+    max-width: 100%;
+}
+
+
+/* ------------------------------------------------------------
+   REDUCED MOTION
+   ------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+
+    #player-modal .watching-dot,
+    #player-modal .player-live-dot {
+        animation: none !important;
+    }
+}
