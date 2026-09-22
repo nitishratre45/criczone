@@ -3240,7 +3240,55 @@ setInterval(
     120000
 );
 
+/* =========================================================
+   PLAYER FULLSCREEN
+   ========================================================= */
 
+window.togglePlayerFullscreen = async function () {
+
+    const modal = document.getElementById("player-modal");
+
+    if (!modal) {
+        return;
+    }
+
+    try {
+
+        if (!document.fullscreenElement) {
+
+            if (modal.requestFullscreen) {
+
+                await modal.requestFullscreen();
+
+            } else if (modal.webkitRequestFullscreen) {
+
+                modal.webkitRequestFullscreen();
+
+            }
+
+        } else {
+
+            if (document.exitFullscreen) {
+
+                await document.exitFullscreen();
+
+            } else if (document.webkitExitFullscreen) {
+
+                document.webkitExitFullscreen();
+
+            }
+        }
+
+    } catch (error) {
+
+        console.warn(
+            "Fullscreen request failed:",
+            error
+        );
+
+    }
+
+};
 /* =========================================================
    GLOBAL FUNCTIONS
 ========================================================= */
