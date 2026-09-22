@@ -772,41 +772,71 @@
         </div>
 
 
+                    
 
-        <!-- PLAYER HEADER -->
+
 
         <div class="player-topbar">
 
-            <div class="player-live-status">
+    <div class="player-live-status">
 
-                <span class="player-live-dot"></span>
+        <span class="player-live-dot"></span>
 
-                <strong>
-                    LIVE
-                </strong>
+        <strong>LIVE</strong>
 
-                <span class="player-live-divider"></span>
+        <span class="player-live-divider"></span>
 
-                <span>
-                    CRICZONE LIVE
-                </span>
+        <span>CRICZONE LIVE</span>
 
-            </div>
+    </div>
 
 
-            <button class="close-player-btn"
-                    onclick="closePlayer()">
+    <!-- WATCHING COUNTER -->
+    <div id="live-watching"
+         class="live-watching"
+         aria-live="polite"
+         aria-label="Live viewers">
 
-                ✕
-                <span>Close Player</span>
+        <span class="watching-dot"></span>
 
-            </button>
+        <span class="watching-text">
 
-        </div>
+            <b id="watching-count">400</b>
+
+            <span>Watching</span>
+
+        </span>
+
+    </div>
 
 
+    <div class="player-controls">
 
-        <!-- PLAYER -->
+        <!-- FULLSCREEN -->
+        <button class="expand-player-btn"
+                type="button"
+                onclick="togglePlayerFullscreen()"
+                aria-label="Fullscreen">
+
+            <span class="expand-icon">⛶</span>
+
+        </button>
+
+
+        <!-- CLOSE -->
+        <button class="close-player-btn"
+                type="button"
+                onclick="closePlayer()">
+
+            ✕
+
+            <span>Close Player</span>
+
+        </button>
+
+    </div>
+
+</div>
 
         <div class="iframe-container">
 
