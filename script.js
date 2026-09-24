@@ -20,6 +20,8 @@ window.PRIMARY_URL =
     "https://raw.githubusercontent.com/kajju027/Fancode-Events-Json/main/fancode.json";
 
 
+
+
 /* =========================================================
    FIREBASE LIVE VIEWER SYSTEM
 ========================================================= */
@@ -42,7 +44,33 @@ const FIREBASE_CONFIG = {
 
     400 = configured baseline
     + real active viewers
+/*
+    LOCAL CRICZONE PLAYER
+    External Netlify player removed.
+*/
 
+const playerURL =
+    new URL(
+        'player.html',
+        window.location.href
+    );
+
+playerURL.searchParams.set(
+    'stream',
+    streamData.url
+);
+
+if (streamData.key) {
+
+    playerURL.searchParams.set(
+        'key',
+        streamData.key
+    );
+
+}
+
+iframe.src =
+    playerURL.toString();
     Example:
     400 + 5 real viewers = 405
 */
