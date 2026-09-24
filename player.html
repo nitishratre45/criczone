@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CRICZONE Player</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: #000;
+            object-fit: contain;
+        }
+
+        #error {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            background: #000;
+            padding: 25px;
+            font-family: Arial, sans-serif;
+        }
+
+        #error div {
+            max-width: 500px;
+        }
+
+        #error h3 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <video
+        id="video"
+        controls
+        autoplay
+        playsinline
+        crossorigin="anonymous">
+    </video>
+
+    <div id="error">
+        <div>
+            <h3>Unable to play stream</h3>
+            <p id="errorText">
+                The stream could not be loaded.
+            </p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.compiled.min.js"></script>
+
+    <script>
+        async function startPlayer() {
+
+            const params =
+                new URLSearchParams(
+                    window.location.search
+                );
+
+            const stream =
+                params.get("stream");
+
+            const key =
+                params.get("key");
+
+            const video =
+                document.getElementById("video");
+
+            const errorBox =
+                document.getElementById("error");
+
+            const errorText =
+                document.getElementById("errorText");
+
+            if (!stream) {
+                errorBox.style.display = "flex";
+                errorText.textContent =
+                    "Stream URL is missing.";
+                return;
+            }
+
+            shaka.polyfill.installAll();
+
+            if (!shaka.Player.isBrowserSupported()) {
+                errorBox.style.display = "flex";
+                errorText.textContent =
+                    "This browser does not support the player.";
+                return;
+            }
+
+            const player =
+                new shaka.Player(video);
+
+            player.addEventListener(
+                "error",
+                event => {
+
+                    console.error(
+                        "Shaka error:",
+                        event.detail
+                    );
+
+                    errorBox.style.display =
+                        "flex";
+
+                    errorText.textContent =
+                        "Stream playback error.";
+                }
+            );
+
+            try {
+
+                /*
+                 * ClearKey support
+                 */
+
+                if (key) {
+
+                    let clearKeys = {};
+
+                    try {
+
+                        /*
+                         * JSON format:
+                         * {"KID":"KEY"}
+                         */
+
+                        const parsed =
+                            JSON.parse(key);
+
+                        if (
+                            parsed &&
+                            typeof parsed === "object"
+                        ) {
+                            clearKeys = parsed;
+                        }
+
+                    } catch {
+
+                        /*
+                         * KID:KEY format
+                         */
+
+                        if (key.includes(":")) {
+
+                            const parts =
+                                key.split(":");
+
+                            if (parts.length >= 2) {
+
+                                const kid =
+                                    parts.shift();
+
+                                const value =
+                                    parts.join(":");
+
+                                clearKeys[kid] =
+                                    value;
+                            }
+                        }
+                    }
+
+                    if (
+                        Object.keys(clearKeys).length
+                    ) {
+
+                        player.configure({
+                            drm: {
+                                clearKeys:
+                                    clearKeys
+                            }
+                        });
+
+                    }
+                }
+
+                await player.load(stream);
+
+                console.log(
+                    "CRICZONE stream loaded"
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Player load error:",
+                    error
+                );
+
+                errorBox.style.display =
+                    "flex";
+
+                errorText.textContent =
+                    "Unable to load the stream.";
+            }
+        }
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            startPlayer
+        );
+    </script>
+
+</body>
+</html>
