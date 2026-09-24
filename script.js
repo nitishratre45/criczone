@@ -73,7 +73,6 @@ iframe.src =
     playerURL.toString();
     Example:
     400 + 5 real viewers = 405
-*/
 
 const VIEWER_BASELINE = 400;
 
